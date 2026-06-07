@@ -7,6 +7,7 @@ use App\Models\AccessRequest;
 use App\Models\JitSession;
 use App\Notifications\AccessRequestApprovedNotification;
 use App\Notifications\AccessRequestRejectedNotification;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,13 +32,13 @@ class AccessRequestController extends Controller
         return view('admin.access-requests.show', compact('accessRequest'));
     }
 
-    public function approve(Request $request, AccessRequest $accessRequest): RedirectResponse
+    public function approve(Request $request, AccessRequest $accessRequest, AuditLogService $auditLog): RedirectResponse
     {
         if (! $accessRequest->isPending()) {
             return back()->with('error', 'Only pending requests can be approved.');
         }
 
-        DB::transaction(function () use ($request, $accessRequest): void {
+        $jitSession = DB::transaction(function () use ($request, $accessRequest): JitSession {
             $now = now();
 
             $accessRequest->update([
@@ -49,7 +50,7 @@ class AccessRequestController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            $accessRequest->jitSession()->create([
+            return $accessRequest->jitSession()->create([
                 'user_id' => $accessRequest->user_id,
                 'target_server_id' => $accessRequest->target_server_id,
                 'started_at' => $now,
@@ -61,12 +62,28 @@ class AccessRequestController extends Controller
         $accessRequest->load(['user', 'targetServer', 'jitSession']);
         $accessRequest->user->notify(new AccessRequestApprovedNotification($accessRequest));
 
+        $auditLog->log(
+            $request->user(),
+            'access_request_approved',
+            $accessRequest,
+            "Access request #{$accessRequest->id} approved.",
+            ['requester_id' => $accessRequest->user_id]
+        );
+
+        $auditLog->log(
+            $request->user(),
+            'jit_session_created',
+            $jitSession,
+            "JIT session #{$jitSession->id} created for access request #{$accessRequest->id}.",
+            ['access_request_id' => $accessRequest->id, 'expires_at' => $jitSession->expires_at?->toDateTimeString()]
+        );
+
         return redirect()
             ->route('admin.access-requests.show', $accessRequest)
             ->with('success', 'Access request approved and JIT session started.');
     }
 
-    public function reject(Request $request, AccessRequest $accessRequest): RedirectResponse
+    public function reject(Request $request, AccessRequest $accessRequest, AuditLogService $auditLog): RedirectResponse
     {
         if (! $accessRequest->isPending()) {
             return back()->with('error', 'Only pending requests can be rejected.');
@@ -87,6 +104,14 @@ class AccessRequestController extends Controller
 
         $accessRequest->load(['user', 'targetServer']);
         $accessRequest->user->notify(new AccessRequestRejectedNotification($accessRequest));
+
+        $auditLog->log(
+            $request->user(),
+            'access_request_rejected',
+            $accessRequest,
+            "Access request #{$accessRequest->id} rejected.",
+            ['requester_id' => $accessRequest->user_id, 'rejection_reason' => $accessRequest->rejection_reason]
+        );
 
         return redirect()
             ->route('admin.access-requests.show', $accessRequest)

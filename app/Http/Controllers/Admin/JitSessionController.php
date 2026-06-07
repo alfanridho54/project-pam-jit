@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccessRequest;
 use App\Models\JitSession;
 use App\Notifications\JitSessionRevokedNotification;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class JitSessionController extends Controller
         return view('admin.sessions.show', compact('jitSession'));
     }
 
-    public function revoke(Request $request, JitSession $jitSession): RedirectResponse
+    public function revoke(Request $request, JitSession $jitSession, AuditLogService $auditLog): RedirectResponse
     {
         if (! $jitSession->isActive()) {
             return back()->with('error', 'Only active sessions can be revoked.');
@@ -58,6 +59,14 @@ class JitSessionController extends Controller
 
         $jitSession->load(['user', 'targetServer']);
         $jitSession->user->notify(new JitSessionRevokedNotification($jitSession));
+
+        $auditLog->log(
+            $request->user(),
+            'jit_session_revoked',
+            $jitSession,
+            "JIT session #{$jitSession->id} revoked.",
+            ['revoke_reason' => $jitSession->revoke_reason, 'access_request_id' => $jitSession->access_request_id]
+        );
 
         return redirect()
             ->route('admin.sessions.show', $jitSession)

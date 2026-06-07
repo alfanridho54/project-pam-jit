@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccessRequestController;
 use App\Http\Controllers\Admin\AccessRequestController as AdminAccessRequestController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\JitSessionController as AdminJitSessionController;
 use App\Http\Controllers\Admin\TargetServerController;
 use App\Http\Controllers\JitSessionController;
@@ -47,6 +48,11 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/sessions', [AdminJitSessionController::class, 'index'])->name('sessions.index');
         Route::get('/sessions/{jitSession}', [AdminJitSessionController::class, 'show'])->name('sessions.show');
         Route::post('/sessions/{jitSession}/revoke', [AdminJitSessionController::class, 'revoke'])->name('sessions.revoke');
+
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        Route::post('/target-servers/{targetServer}/test-connection', [TargetServerController::class, 'testConnection'])
+            ->name('target-servers.test-connection');
 
         Route::resource('target-servers', TargetServerController::class)
             ->except(['show']);

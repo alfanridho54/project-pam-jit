@@ -6,6 +6,7 @@ use App\Models\AccessRequest;
 use App\Models\TargetServer;
 use App\Models\User;
 use App\Notifications\AccessRequestCreatedNotification;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,7 +35,7 @@ class AccessRequestController extends Controller
         return view('requests.create', compact('targetServers'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AuditLogService $auditLog): RedirectResponse
     {
         $validated = $request->validate([
             'target_server_id' => [
@@ -60,6 +61,17 @@ class AccessRequestController extends Controller
             ->get()
             ->each
             ->notify(new AccessRequestCreatedNotification($accessRequest));
+
+        $auditLog->log(
+            $request->user(),
+            'access_request_created',
+            $accessRequest,
+            "Access request created for {$accessRequest->targetServer->name}.",
+            [
+                'target_server_id' => $accessRequest->target_server_id,
+                'duration_minutes' => $accessRequest->requested_duration_minutes,
+            ]
+        );
 
         return redirect()
             ->route('requests.show', $accessRequest)

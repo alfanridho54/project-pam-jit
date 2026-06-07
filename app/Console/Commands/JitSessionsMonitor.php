@@ -6,6 +6,7 @@ use App\Models\AccessRequest;
 use App\Models\JitSession;
 use App\Notifications\JitSessionExpiredNotification;
 use App\Notifications\JitSessionExpiringSoonNotification;
+use App\Services\AuditLogService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -15,11 +16,11 @@ class JitSessionsMonitor extends Command
 
     protected $description = 'Send JIT session expiry warnings and expire elapsed sessions.';
 
-    public function handle(): int
+    public function handle(AuditLogService $auditLog): int
     {
         $now = now();
-        $warningCount = $this->sendExpiryWarnings($now);
-        $expiredCount = $this->expireSessions($now);
+        $warningCount = $this->sendExpiryWarnings($now, $auditLog);
+        $expiredCount = $this->expireSessions($now, $auditLog);
 
         $this->info("Sent {$warningCount} expiry warning(s).");
         $this->info("Expired {$expiredCount} JIT session(s).");
@@ -27,7 +28,7 @@ class JitSessionsMonitor extends Command
         return self::SUCCESS;
     }
 
-    private function sendExpiryWarnings($now): int
+    private function sendExpiryWarnings($now, AuditLogService $auditLog): int
     {
         $warningCount = 0;
 
@@ -37,9 +38,9 @@ class JitSessionsMonitor extends Command
             ->where('expires_at', '>', $now)
             ->where('expires_at', '<=', $now->copy()->addMinutes(5))
             ->with(['user', 'targetServer'])
-            ->chunkById(100, function ($sessions) use ($now, &$warningCount): void {
+            ->chunkById(100, function ($sessions) use ($now, $auditLog, &$warningCount): void {
                 foreach ($sessions as $session) {
-                    DB::transaction(function () use ($session, $now, &$warningCount): void {
+                    DB::transaction(function () use ($session, $now, $auditLog, &$warningCount): void {
                         $updated = JitSession::query()
                             ->whereKey($session->id)
                             ->where('status', JitSession::STATUS_ACTIVE)
@@ -56,6 +57,14 @@ class JitSessionsMonitor extends Command
                         $session->forceFill(['expiry_warning_sent_at' => $now]);
                         $session->user->notify(new JitSessionExpiringSoonNotification($session));
 
+                        $auditLog->log(
+                            null,
+                            'jit_session_expiry_warning_sent',
+                            $session,
+                            "Expiry warning sent for JIT session #{$session->id}.",
+                            ['expires_at' => $session->expires_at->toDateTimeString(), 'user_id' => $session->user_id]
+                        );
+
                         $warningCount++;
                     });
                 }
@@ -64,7 +73,7 @@ class JitSessionsMonitor extends Command
         return $warningCount;
     }
 
-    private function expireSessions($now): int
+    private function expireSessions($now, AuditLogService $auditLog): int
     {
         $expiredCount = 0;
 
@@ -72,9 +81,9 @@ class JitSessionsMonitor extends Command
             ->where('status', JitSession::STATUS_ACTIVE)
             ->where('expires_at', '<=', $now)
             ->with(['accessRequest', 'user', 'targetServer'])
-            ->chunkById(100, function ($sessions) use ($now, &$expiredCount): void {
+            ->chunkById(100, function ($sessions) use ($now, $auditLog, &$expiredCount): void {
                 foreach ($sessions as $session) {
-                    DB::transaction(function () use ($session, $now, &$expiredCount): void {
+                    DB::transaction(function () use ($session, $now, $auditLog, &$expiredCount): void {
                         $updated = JitSession::query()
                             ->whereKey($session->id)
                             ->where('status', JitSession::STATUS_ACTIVE)
@@ -98,6 +107,14 @@ class JitSessionsMonitor extends Command
                         ]);
 
                         $session->user->notify(new JitSessionExpiredNotification($session));
+
+                        $auditLog->log(
+                            null,
+                            'jit_session_expired',
+                            $session,
+                            "JIT session #{$session->id} expired.",
+                            ['access_request_id' => $session->access_request_id, 'ended_at' => $now->toDateTimeString()]
+                        );
 
                         $expiredCount++;
                     });

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TargetServer;
+use App\Services\AuditLogService;
+use App\Services\SshConnectionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -33,11 +35,19 @@ class TargetServerController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AuditLogService $auditLog): RedirectResponse
     {
         $validated = $this->validateTargetServer($request);
 
         $targetServer = TargetServer::create($this->attributesWithEncryptedSecrets($validated));
+
+        $auditLog->log(
+            $request->user(),
+            'target_server_created',
+            $targetServer,
+            "Target server {$targetServer->name} created.",
+            ['host' => $targetServer->host, 'port' => $targetServer->port]
+        );
 
         return redirect()
             ->route('admin.target-servers.edit', $targetServer)
@@ -49,24 +59,68 @@ class TargetServerController extends Controller
         return view('admin.target-servers.edit', compact('targetServer'));
     }
 
-    public function update(Request $request, TargetServer $targetServer): RedirectResponse
+    public function update(Request $request, TargetServer $targetServer, AuditLogService $auditLog): RedirectResponse
     {
         $validated = $this->validateTargetServer($request, $targetServer);
 
         $targetServer->update($this->attributesWithEncryptedSecrets($validated, $targetServer));
+
+        $auditLog->log(
+            $request->user(),
+            'target_server_updated',
+            $targetServer,
+            "Target server {$targetServer->name} updated.",
+            ['host' => $targetServer->host, 'port' => $targetServer->port]
+        );
 
         return redirect()
             ->route('admin.target-servers.edit', $targetServer)
             ->with('success', 'Target server updated.');
     }
 
-    public function destroy(TargetServer $targetServer): RedirectResponse
+    public function destroy(Request $request, TargetServer $targetServer, AuditLogService $auditLog): RedirectResponse
     {
+        $auditLog->log(
+            $request->user(),
+            'target_server_deleted',
+            $targetServer,
+            "Target server {$targetServer->name} deleted.",
+            ['host' => $targetServer->host, 'port' => $targetServer->port]
+        );
+
         $targetServer->delete();
 
         return redirect()
             ->route('admin.target-servers.index')
             ->with('success', 'Target server deleted.');
+    }
+
+    public function testConnection(
+        Request $request,
+        TargetServer $targetServer,
+        SshConnectionService $sshConnection,
+        AuditLogService $auditLog
+    ): RedirectResponse {
+        $result = $sshConnection->testConnection($targetServer);
+        $action = $result['ok']
+            ? 'target_server_ssh_test_succeeded'
+            : 'target_server_ssh_test_failed';
+
+        $auditLog->log(
+            $request->user(),
+            $action,
+            $targetServer,
+            $result['message'],
+            [
+                'host' => $targetServer->host,
+                'port' => $targetServer->port,
+                'auth_type' => $targetServer->auth_type,
+            ]
+        );
+
+        return back()
+            ->with($result['ok'] ? 'success' : 'error', $result['message'])
+            ->with('ssh_test_result', $result);
     }
 
     /**

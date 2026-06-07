@@ -13,6 +13,19 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if (session('ssh_test_result'))
+                <div class="mb-6 rounded-md bg-white p-6 shadow-sm">
+                    <h3 class="text-sm font-semibold text-gray-900">{{ __('SSH Test Result') }}</h3>
+                    <p class="mt-2 text-sm {{ session('ssh_test_result.ok') ? 'text-green-700' : 'text-red-700' }}">
+                        {{ session('ssh_test_result.message') }}
+                    </p>
+
+                    @if (! empty(session('ssh_test_result.details.output')))
+                        <pre class="mt-4 overflow-x-auto rounded bg-gray-900 p-4 text-sm text-gray-100">{{ session('ssh_test_result.details.output') }}</pre>
+                    @endif
+                </div>
+            @endif
+
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -49,6 +62,14 @@
                                         <a href="{{ route('admin.target-servers.edit', $targetServer) }}" class="text-indigo-600 hover:text-indigo-900">
                                             {{ __('Edit') }}
                                         </a>
+
+                                        <form method="POST" action="{{ route('admin.target-servers.test-connection', $targetServer) }}" class="ms-4 inline">
+                                            @csrf
+
+                                            <button type="submit" class="text-gray-700 hover:text-gray-900">
+                                                {{ __('Test Connection') }}
+                                            </button>
+                                        </form>
 
                                         <form method="POST" action="{{ route('admin.target-servers.destroy', $targetServer) }}" class="ms-4 inline" onsubmit="return confirm('{{ __('Delete this target server?') }}');">
                                             @csrf

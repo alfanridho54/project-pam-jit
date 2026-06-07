@@ -13,6 +13,29 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            @if (session('ssh_test_result'))
+                <div class="mb-6 rounded-md bg-white p-6 shadow-sm">
+                    <h3 class="text-sm font-semibold text-gray-900">{{ __('SSH Test Result') }}</h3>
+                    <p class="mt-2 text-sm {{ session('ssh_test_result.ok') ? 'text-green-700' : 'text-red-700' }}">
+                        {{ session('ssh_test_result.message') }}
+                    </p>
+
+                    @if (! empty(session('ssh_test_result.details.output')))
+                        <pre class="mt-4 overflow-x-auto rounded bg-gray-900 p-4 text-sm text-gray-100">{{ session('ssh_test_result.details.output') }}</pre>
+                    @endif
+                </div>
+            @endif
+
+            <div class="mb-6 flex justify-end">
+                <form method="POST" action="{{ route('admin.target-servers.test-connection', $targetServer) }}">
+                    @csrf
+
+                    <x-secondary-button>
+                        {{ __('Test Connection') }}
+                    </x-secondary-button>
+                </form>
+            </div>
+
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                 <form method="POST" action="{{ route('admin.target-servers.update', $targetServer) }}" class="space-y-6">
                     @csrf
