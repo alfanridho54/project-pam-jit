@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\TargetServer;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -16,18 +17,42 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-        ]);
+        User::query()->updateOrCreate(
+            [
+                'email' => 'admin@example.com',
+            ],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+            ],
+        );
 
-        User::factory()->create([
-            'name' => 'User',
-            'email' => 'user@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'user',
-        ]);
+        User::query()->updateOrCreate(
+            [
+                'email' => 'user@example.com',
+            ],
+            [
+                'name' => 'User',
+                'password' => Hash::make('password'),
+                'role' => 'user',
+            ],
+        );
+
+        TargetServer::query()->firstOrCreate(
+            [
+                'name' => 'Demo Localhost',
+            ],
+            [
+                'host' => '127.0.0.1',
+                'port' => 22,
+                'ssh_username' => null,
+                'auth_type' => 'password',
+                'ssh_password_encrypted' => null,
+                'ssh_private_key_encrypted' => null,
+                'description' => 'Inactive placeholder target server for demo data. No real credentials are stored.',
+                'is_active' => false,
+            ],
+        );
     }
 }

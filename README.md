@@ -1,58 +1,130 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PAM JIT
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+PAM JIT is a Laravel-based privileged access management MVP for just-in-time SSH access. Users request temporary access to target servers, admins approve or reject those requests, and approved requests create time-limited JIT sessions that can execute SSH commands without exposing stored credentials to users.
 
-## About Laravel
+## Key Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Role-based access for admins and regular users.
+- Admin-only target server CRUD with encrypted SSH credentials.
+- SSH connection testing for target servers.
+- User access request workflow.
+- Admin approval and rejection workflow.
+- Time-limited JIT sessions with automatic expiry monitoring.
+- Web-based SSH command execution for active sessions.
+- Command blocking policy for dangerous commands.
+- Database notifications for request/session events.
+- Centralized audit logs and command logs.
+- Admin and user dashboards.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Laravel
+- Laravel Breeze authentication
+- Blade and Tailwind CSS
+- MySQL or another Laravel-supported database
+- Laravel database notifications
+- phpseclib for SSH
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Installation
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Configure your database in `.env`, then run:
 
-## Contributing
+```bash
+php artisan migrate --seed
+npm run build
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+For local development:
 
-## Code of Conduct
+```bash
+php artisan serve
+npm run dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Environment Configuration
 
-## Security Vulnerabilities
+Important `.env` values:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```env
+APP_NAME="PAM JIT"
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
 
-## License
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=pam_jit
+DB_USERNAME=
+DB_PASSWORD=
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The application timezone is configured as `Asia/Jakarta` in `config/app.php`. If configuration is cached after changing config values, run:
+
+```bash
+php artisan config:clear
+```
+
+## Database Migration and Seeding
+
+Run migrations and demo seed data:
+
+```bash
+php artisan migrate --seed
+```
+
+To reset the database during development:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+## Scheduler Setup
+
+The scheduler runs the JIT session monitor every minute. It sends expiry warnings, expires elapsed sessions, updates related access requests, sends notifications, and writes audit logs.
+
+See [docs/scheduler.md](docs/scheduler.md) for cron setup.
+
+## Default Demo Accounts
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | admin@example.com | password |
+| User | user@example.com | password |
+
+The seeder also creates one inactive placeholder target server using `127.0.0.1`. It does not contain real SSH credentials.
+
+## Basic Workflow
+
+1. Admin creates or configures a target server.
+2. User submits an access request for an active target server.
+3. Admin approves or rejects the request.
+4. Approval creates an active JIT session with an expiry time.
+5. User opens the active session and runs allowed SSH commands.
+6. Command attempts are written to command logs.
+7. Request, session, notification, and command events are written to audit logs.
+8. The scheduler warns users before expiry and expires sessions automatically.
+
+## Security Notes
+
+- SSH passwords and private keys are encrypted with Laravel Crypt before storage.
+- Decrypted credentials are never displayed in forms, tables, logs, notifications, command logs, or audit logs.
+- Users can only view and use their own access requests and JIT sessions.
+- Admin-only routes protect target server management, approvals, audit logs, and command logs.
+- The command policy blocks dangerous command patterns before SSH execution.
+- Sessions can expire automatically or be revoked by an admin.
+- This is an MVP, not a full interactive terminal or complete PAM replacement.
+
+## More Documentation
+
+- [Scheduler setup](docs/scheduler.md)
+- [Workflow](docs/workflow.md)
+- [Security](docs/security.md)
