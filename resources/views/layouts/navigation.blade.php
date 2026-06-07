@@ -45,6 +45,10 @@
                         <x-nav-link :href="route('admin.audit-logs.index')" :active="request()->routeIs('admin.audit-logs.*')">
                             {{ __('Audit Logs') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.command-logs.index')" :active="request()->routeIs('admin.command-logs.*')">
+                            {{ __('Command Logs') }}
+                        </x-nav-link>
                     @else
                         <x-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">
                             {{ __('My Requests') }}
@@ -136,6 +140,10 @@
 
                 <x-responsive-nav-link :href="route('admin.audit-logs.index')" :active="request()->routeIs('admin.audit-logs.*')">
                     {{ __('Audit Logs') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.command-logs.index')" :active="request()->routeIs('admin.command-logs.*')">
+                    {{ __('Command Logs') }}
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">

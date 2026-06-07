@@ -47,4 +47,9 @@ class TargetServer extends Model
     {
         return $this->hasMany(JitSession::class);
     }
+
+    public function commandLogs(): HasMany
+    {
+        return $this->hasMany(CommandLog::class);
+    }
 }

@@ -3,11 +3,13 @@
 use App\Http\Controllers\AccessRequestController;
 use App\Http\Controllers\Admin\AccessRequestController as AdminAccessRequestController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\CommandLogController;
 use App\Http\Controllers\Admin\JitSessionController as AdminJitSessionController;
 use App\Http\Controllers\Admin\TargetServerController;
 use App\Http\Controllers\JitSessionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SessionCommandController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -25,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/requests/{accessRequest}', [AccessRequestController::class, 'show'])->name('requests.show');
 
     Route::get('/sessions', [JitSessionController::class, 'index'])->name('sessions.index');
+    Route::get('/sessions/{jitSession}/commands', [SessionCommandController::class, 'index'])->name('sessions.commands.index');
+    Route::post('/sessions/{jitSession}/commands', [SessionCommandController::class, 'store'])->name('sessions.commands.store');
     Route::get('/sessions/{jitSession}', [JitSessionController::class, 'show'])->name('sessions.show');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -50,6 +54,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('/sessions/{jitSession}/revoke', [AdminJitSessionController::class, 'revoke'])->name('sessions.revoke');
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('/command-logs', [CommandLogController::class, 'index'])->name('command-logs.index');
 
         Route::post('/target-servers/{targetServer}/test-connection', [TargetServerController::class, 'testConnection'])
             ->name('target-servers.test-connection');

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'access_request_id',
@@ -68,6 +69,11 @@ class JitSession extends Model
     public function revokedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'revoked_by');
+    }
+
+    public function commandLogs(): HasMany
+    {
+        return $this->hasMany(CommandLog::class);
     }
 
     public function isActive(): bool

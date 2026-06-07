@@ -13,6 +13,14 @@
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            @if ($jitSession->isUsable() && $jitSession->targetServer->is_active)
+                <div class="mb-6 flex justify-end">
+                    <a href="{{ route('sessions.commands.index', $jitSession) }}" class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        {{ __('Open SSH Command') }}
+                    </a>
+                </div>
+            @endif
+
             <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                 <dl class="grid gap-6 sm:grid-cols-2">
                     <div>

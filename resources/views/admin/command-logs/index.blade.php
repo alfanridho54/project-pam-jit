@@ -1,0 +1,68 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Command Logs') }}
+        </h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Time') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('User') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Target Server') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Session') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Command') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Status') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Output Excerpt') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @forelse ($commandLogs as $commandLog)
+                                <tr>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                                        {{ $commandLog->executed_at?->format('Y-m-d H:i:s') }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                        {{ $commandLog->user?->name ?? __('Unknown') }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                        {{ $commandLog->targetServer?->name ?? __('Unknown') }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                                        #{{ $commandLog->jit_session_id }}
+                                    </td>
+                                    <td class="max-w-xs px-6 py-4 font-mono text-sm text-gray-900">
+                                        {{ $commandLog->command }}
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
+                                        {{ ucfirst($commandLog->status) }}
+                                    </td>
+                                    <td class="max-w-md px-6 py-4 text-sm text-gray-600">
+                                        <pre class="whitespace-pre-wrap break-words">{{ $commandLog->output_excerpt }}</pre>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">
+                                        {{ __('No command logs have been recorded yet.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($commandLogs->hasPages())
+                    <div class="border-t border-gray-200 px-6 py-4">
+                        {{ $commandLogs->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</x-app-layout>

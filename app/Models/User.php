@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->hasMany(JitSession::class, 'revoked_by');
     }
 
+    public function commandLogs(): HasMany
+    {
+        return $this->hasMany(CommandLog::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
