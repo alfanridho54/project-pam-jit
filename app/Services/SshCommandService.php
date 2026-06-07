@@ -47,7 +47,7 @@ class SshCommandService
 
         try {
             $ssh = new SSH2($targetServer->host, $targetServer->port, 10);
-            $ssh->setTimeout(30);
+            $ssh->setTimeout(10);
 
             if (! $ssh->login($targetServer->ssh_username, $credential)) {
                 return $this->result(false, 'failed', 'SSH authentication failed.');

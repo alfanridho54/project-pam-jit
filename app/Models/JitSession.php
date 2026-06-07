@@ -91,6 +91,15 @@ class JitSession extends Model
         return $this->status === self::STATUS_REVOKED;
     }
 
+    public function effectiveStatus(): string
+    {
+        if ($this->status === self::STATUS_ACTIVE && $this->expires_at->isPast()) {
+            return self::STATUS_EXPIRED;
+        }
+
+        return $this->status;
+    }
+
     public function isUsable(): bool
     {
         return $this->isActive() && $this->expires_at->isFuture();

@@ -52,7 +52,7 @@
                                     @endif
 
                                     <p class="mt-3 text-xs text-gray-500">
-                                        {{ $notification->created_at->format('Y-m-d H:i') }}
+                                        {{ $notification->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </p>
                                 </div>
 

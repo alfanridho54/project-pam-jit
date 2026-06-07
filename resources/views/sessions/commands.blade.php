@@ -32,7 +32,7 @@
 
                     <div>
                         <dt class="text-sm font-medium text-gray-500">{{ __('Status') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($jitSession->status) }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($jitSession->effectiveStatus()) }}</dd>
                     </div>
 
                     <div>
@@ -42,7 +42,7 @@
 
                     <div>
                         <dt class="text-sm font-medium text-gray-500">{{ __('Expires At') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->expires_at->format('Y-m-d H:i') }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->expires_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                     </div>
                 </dl>
             </div>
@@ -58,9 +58,7 @@
                         <p class="mt-2 text-xs text-gray-500">{{ __('Exit code') }}: {{ session('command_result.exit_code') }}</p>
                     @endif
 
-                    @if (! empty(session('command_result.output')))
-                        <pre class="mt-4 overflow-x-auto rounded bg-gray-900 p-4 text-sm text-gray-100">{{ session('command_result.output') }}</pre>
-                    @endif
+                    <pre class="mt-4 overflow-x-auto rounded bg-gray-900 p-4 text-sm text-gray-100">{{ filled(session('command_result.output')) ? session('command_result.output') : __('(no output)') }}</pre>
                 </div>
             @endif
 
@@ -75,6 +73,14 @@
                             <x-input-label for="command" :value="__('Command')" />
                             <textarea id="command" name="command" rows="4" class="mt-1 block w-full rounded-md border-gray-300 font-mono text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>{{ old('command') }}</textarea>
                             <x-input-error class="mt-2" :messages="$errors->get('command')" />
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (['whoami', 'pwd', 'hostname', 'uptime', 'ls'] as $quickCommand)
+                                <button type="button" class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50" onclick="document.getElementById('command').value = @js($quickCommand);">
+                                    {{ $quickCommand }}
+                                </button>
+                            @endforeach
                         </div>
 
                         <x-primary-button>
@@ -105,7 +111,7 @@
                             @forelse ($commandLogs as $commandLog)
                                 <tr>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $commandLog->executed_at?->format('Y-m-d H:i:s') }}
+                                        {{ $commandLog->executed_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="max-w-xs px-6 py-4 font-mono text-sm text-gray-900">
                                         {{ $commandLog->command }}
@@ -114,7 +120,7 @@
                                         {{ ucfirst($commandLog->status) }}
                                     </td>
                                     <td class="max-w-md px-6 py-4 text-sm text-gray-600">
-                                        <pre class="whitespace-pre-wrap break-words">{{ $commandLog->output_excerpt }}</pre>
+                                        <pre class="whitespace-pre-wrap break-words">{{ filled($commandLog->output_excerpt) ? $commandLog->output_excerpt : __('(no output)') }}</pre>
                                     </td>
                                 </tr>
                             @empty

@@ -18,4 +18,11 @@ class CommandLogController extends Controller
 
         return view('admin.command-logs.index', compact('commandLogs'));
     }
+
+    public function show(CommandLog $commandLog): View
+    {
+        $commandLog->load(['user', 'targetServer', 'jitSession']);
+
+        return view('admin.command-logs.show', compact('commandLog'));
+    }
 }

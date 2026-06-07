@@ -35,10 +35,10 @@
                                         {{ $accessRequest->requested_duration_minutes }} {{ __('minutes') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ ucfirst($accessRequest->status) }}
+                                        {{ ucfirst($accessRequest->effectiveStatus()) }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $accessRequest->created_at->format('Y-m-d H:i') }}
+                                        {{ $accessRequest->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                                         <a href="{{ route('requests.show', $accessRequest) }}" class="text-indigo-600 hover:text-indigo-900">

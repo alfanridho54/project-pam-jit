@@ -30,13 +30,13 @@
                                         {{ $jitSession->targetServer->name }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $jitSession->started_at->format('Y-m-d H:i') }}
+                                        {{ $jitSession->started_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $jitSession->expires_at->format('Y-m-d H:i') }}
+                                        {{ $jitSession->expires_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ ucfirst($jitSession->status) }}
+                                        {{ ucfirst($jitSession->effectiveStatus()) }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                                         <a href="{{ route('admin.sessions.show', $jitSession) }}" class="text-indigo-600 hover:text-indigo-900">

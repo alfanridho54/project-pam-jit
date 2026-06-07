@@ -23,7 +23,7 @@
 
                         <div>
                             <dt class="text-sm font-medium text-gray-500">{{ __('Status') }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($accessRequest->status) }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($accessRequest->effectiveStatus()) }}</dd>
                         </div>
 
                         <div>
@@ -43,7 +43,7 @@
 
                         <div>
                             <dt class="text-sm font-medium text-gray-500">{{ __('Submitted') }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->created_at->format('Y-m-d H:i') }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                         </div>
 
                         <div class="sm:col-span-2">
@@ -59,7 +59,7 @@
 
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">{{ __('Approved At') }}</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->approved_at->format('Y-m-d H:i') }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->approved_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                             </div>
                         @endif
 
@@ -71,7 +71,7 @@
 
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">{{ __('Rejected At') }}</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->rejected_at->format('Y-m-d H:i') }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->rejected_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                             </div>
 
                             <div class="sm:col-span-2">

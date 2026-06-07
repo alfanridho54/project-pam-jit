@@ -23,7 +23,7 @@
 
                         <div>
                             <dt class="text-sm font-medium text-gray-500">{{ __('Status') }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($jitSession->status) }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($jitSession->effectiveStatus()) }}</dd>
                         </div>
 
                         <div>
@@ -38,18 +38,18 @@
 
                         <div>
                             <dt class="text-sm font-medium text-gray-500">{{ __('Started At') }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->started_at->format('Y-m-d H:i') }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->started_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                         </div>
 
                         <div>
                             <dt class="text-sm font-medium text-gray-500">{{ __('Expires At') }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->expires_at->format('Y-m-d H:i') }}</dd>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->expires_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                         </div>
 
                         @if ($jitSession->ended_at)
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">{{ __('Ended At') }}</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->ended_at->format('Y-m-d H:i') }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->ended_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                             </div>
                         @endif
 
@@ -61,7 +61,7 @@
 
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">{{ __('Revoked At') }}</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->revoked_at->format('Y-m-d H:i') }}</dd>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->revoked_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}</dd>
                             </div>
 
                             <div class="sm:col-span-2">

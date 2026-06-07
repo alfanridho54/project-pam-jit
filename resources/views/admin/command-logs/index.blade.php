@@ -19,13 +19,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Command') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Status') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Output Excerpt') }}</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 bg-white">
                             @forelse ($commandLogs as $commandLog)
                                 <tr>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $commandLog->executed_at?->format('Y-m-d H:i:s') }}
+                                        {{ $commandLog->executed_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                         {{ $commandLog->user?->name ?? __('Unknown') }}
@@ -43,12 +44,17 @@
                                         {{ ucfirst($commandLog->status) }}
                                     </td>
                                     <td class="max-w-md px-6 py-4 text-sm text-gray-600">
-                                        <pre class="whitespace-pre-wrap break-words">{{ $commandLog->output_excerpt }}</pre>
+                                        <pre class="whitespace-pre-wrap break-words">{{ filled($commandLog->output_excerpt) ? $commandLog->output_excerpt : __('(no output)') }}</pre>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                        <a href="{{ route('admin.command-logs.show', $commandLog) }}" class="text-indigo-600 hover:text-indigo-900">
+                                            {{ __('View') }}
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">
+                                    <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">
                                         {{ __('No command logs have been recorded yet.') }}
                                     </td>
                                 </tr>

@@ -18,7 +18,7 @@ class AccessRequestController extends Controller
     public function index(): View
     {
         $accessRequests = AccessRequest::query()
-            ->with(['user', 'targetServer'])
+            ->with(['user', 'targetServer', 'jitSession'])
             ->latest()
             ->paginate(20);
 
@@ -27,7 +27,7 @@ class AccessRequestController extends Controller
 
     public function show(AccessRequest $accessRequest): View
     {
-        $accessRequest->load(['user', 'targetServer', 'approvedBy', 'rejectedBy']);
+        $accessRequest->load(['user', 'targetServer', 'approvedBy', 'rejectedBy', 'jitSession']);
 
         return view('admin.access-requests.show', compact('accessRequest'));
     }

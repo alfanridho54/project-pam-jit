@@ -17,7 +17,7 @@ class AccessRequestController extends Controller
     public function index(Request $request): View
     {
         $accessRequests = AccessRequest::query()
-            ->with('targetServer')
+            ->with(['targetServer', 'jitSession'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->paginate(15);
@@ -82,7 +82,7 @@ class AccessRequestController extends Controller
     {
         abort_unless($accessRequest->user_id === $request->user()->id, 403);
 
-        $accessRequest->load(['targetServer', 'approvedBy', 'rejectedBy']);
+        $accessRequest->load(['targetServer', 'approvedBy', 'rejectedBy', 'jitSession']);
 
         return view('requests.show', compact('accessRequest'));
     }

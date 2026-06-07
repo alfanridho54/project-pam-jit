@@ -82,4 +82,29 @@ class AccessRequest extends Model
     {
         return $this->status === self::STATUS_PENDING;
     }
+
+    public function effectiveStatus(): string
+    {
+        if ($this->status !== self::STATUS_ACTIVE) {
+            return $this->status;
+        }
+
+        $jitSession = $this->jitSession;
+
+        if (! $jitSession) {
+            return $this->status;
+        }
+
+        $jitSessionStatus = $jitSession->effectiveStatus();
+
+        if (in_array($jitSessionStatus, [
+            JitSession::STATUS_EXPIRED,
+            JitSession::STATUS_REVOKED,
+            JitSession::STATUS_CLOSED,
+        ], true)) {
+            return $jitSessionStatus;
+        }
+
+        return $this->status;
+    }
 }

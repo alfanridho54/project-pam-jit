@@ -55,6 +55,7 @@ Route::middleware(['auth', 'verified', 'admin'])
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/command-logs', [CommandLogController::class, 'index'])->name('command-logs.index');
+        Route::get('/command-logs/{commandLog}', [CommandLogController::class, 'show'])->name('command-logs.show');
 
         Route::post('/target-servers/{targetServer}/test-connection', [TargetServerController::class, 'testConnection'])
             ->name('target-servers.test-connection');

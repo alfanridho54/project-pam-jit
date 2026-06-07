@@ -82,7 +82,7 @@ class SessionCommandController extends Controller
             $request->user()->id,
             $command,
             $status,
-            $result['output'] ?: $result['message'],
+            $result['output'] ?? $result['message'],
             $result['exit_code']
         );
 

@@ -24,7 +24,7 @@
                             @forelse ($auditLogs as $auditLog)
                                 <tr>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $auditLog->created_at->format('Y-m-d H:i:s') }}
+                                        {{ $auditLog->created_at->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                         {{ $auditLog->actor?->name ?? __('System') }}
