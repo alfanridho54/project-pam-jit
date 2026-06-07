@@ -10,6 +10,17 @@ Regular users create access requests from the web app. They can only select acti
 
 Users can view only their own requests.
 
+## Proxmox VM Import
+
+Admins can connect to Proxmox using API token credentials configured in the environment. The initial integration supports:
+
+- testing the Proxmox API connection
+- listing QEMU VMs from the configured node
+- detecting VM IP addresses through the guest agent when available
+- importing a VM as a target server
+
+VM power operations, cloning, deletion, and lifecycle management are intentionally out of scope for the MVP.
+
 ## Admin Approval and Rejection
 
 Admins can view all access requests.

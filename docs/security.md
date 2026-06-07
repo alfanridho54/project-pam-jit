@@ -11,6 +11,7 @@ The application decrypts credentials only inside SSH services when testing a con
 Only admins can:
 
 - create target servers
+- import Proxmox VMs as target servers
 - edit target servers
 - delete target servers
 - test SSH credentials
@@ -48,6 +49,10 @@ The app records centralized audit logs for important actions, including:
 
 Audit metadata avoids decrypted credentials.
 
+## Proxmox Token Handling
+
+Proxmox integration uses API token authentication from environment variables. The token secret is read from configuration for API calls only. It is never displayed in the UI and should not be written to audit logs or application logs.
+
 ## MVP Limitations
 
 - This is not a full interactive terminal.
@@ -56,4 +61,5 @@ Audit metadata avoids decrypted credentials.
 - There is no session recording or keystroke replay.
 - There is no network-level isolation or bastion host integration.
 - SSH key passphrases are not currently modeled separately.
+- Proxmox integration currently supports connection testing, QEMU VM listing, and importing VMs as target servers only.
 - Production deployments should add stronger operational controls, monitoring, and infrastructure hardening.

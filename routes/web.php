@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AccessRequestController as AdminAccessRequestCont
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CommandLogController;
 use App\Http\Controllers\Admin\JitSessionController as AdminJitSessionController;
+use App\Http\Controllers\Admin\ProxmoxController;
 use App\Http\Controllers\Admin\TargetServerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JitSessionController;
@@ -57,6 +58,13 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/command-logs', [CommandLogController::class, 'index'])->name('command-logs.index');
         Route::get('/command-logs/{commandLog}', [CommandLogController::class, 'show'])->name('command-logs.show');
+
+        Route::get('/proxmox', [ProxmoxController::class, 'index'])->name('proxmox.index');
+        Route::post('/proxmox/test', [ProxmoxController::class, 'test'])->name('proxmox.test');
+        Route::get('/proxmox/vms', [ProxmoxController::class, 'vms'])->name('proxmox.vms');
+        Route::post('/proxmox/vms/{vmid}/import', [ProxmoxController::class, 'import'])
+            ->whereNumber('vmid')
+            ->name('proxmox.vms.import');
 
         Route::post('/target-servers/{targetServer}/test-connection', [TargetServerController::class, 'testConnection'])
             ->name('target-servers.test-connection');

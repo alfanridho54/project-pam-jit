@@ -33,6 +33,10 @@
                         <x-nav-link :href="route('admin.target-servers.index')" :active="request()->routeIs('admin.target-servers.*')">
                             {{ __('Target Servers') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('admin.proxmox.index')" :active="request()->routeIs('admin.proxmox.*')">
+                            {{ __('Proxmox') }}
+                        </x-nav-link>
                         
                         <x-nav-link :href="route('admin.access-requests.index')" :active="request()->routeIs('admin.access-requests.*')">
                             {{ __('Access Requests') }}
@@ -128,6 +132,10 @@
 
                 <x-responsive-nav-link :href="route('admin.target-servers.index')" :active="request()->routeIs('admin.target-servers.*')">
                     {{ __('Target Servers') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.proxmox.index')" :active="request()->routeIs('admin.proxmox.*')">
+                    {{ __('Proxmox') }}
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('admin.access-requests.index')" :active="request()->routeIs('admin.access-requests.*')">

@@ -7,6 +7,7 @@ PAM JIT is a Laravel-based privileged access management MVP for just-in-time SSH
 - Role-based access for admins and regular users.
 - Admin-only target server CRUD with encrypted SSH credentials.
 - SSH connection testing for target servers.
+- Initial Proxmox integration for connection testing, QEMU VM listing, and importing VMs as target servers.
 - User access request workflow.
 - Admin approval and rejection workflow.
 - Time-limited JIT sessions with automatic expiry monitoring.
@@ -65,6 +66,13 @@ DB_PORT=3306
 DB_DATABASE=pam_jit
 DB_USERNAME=
 DB_PASSWORD=
+
+PROXMOX_HOST=
+PROXMOX_PORT=8006
+PROXMOX_NODE=
+PROXMOX_TOKEN_ID=
+PROXMOX_TOKEN_SECRET=
+PROXMOX_VERIFY_SSL=true
 ```
 
 The application timezone is configured as `Asia/Jakarta` in `config/app.php`. If configuration is cached after changing config values, run:
@@ -104,7 +112,7 @@ The seeder also creates one inactive placeholder target server using `127.0.0.1`
 
 ## Basic Workflow
 
-1. Admin creates or configures a target server.
+1. Admin creates or configures a target server, or imports a Proxmox QEMU VM as a target server.
 2. User submits an access request for an active target server.
 3. Admin approves or rejects the request.
 4. Approval creates an active JIT session with an expiry time.
@@ -117,6 +125,7 @@ The seeder also creates one inactive placeholder target server using `127.0.0.1`
 
 - SSH passwords and private keys are encrypted with Laravel Crypt before storage.
 - Decrypted credentials are never displayed in forms, tables, logs, notifications, command logs, or audit logs.
+- Proxmox API token secrets are never displayed or logged.
 - Users can only view and use their own access requests and JIT sessions.
 - Admin-only routes protect target server management, approvals, audit logs, and command logs.
 - The command policy blocks dangerous command patterns before SSH execution.
