@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\AccessRequestController;
+use App\Http\Controllers\Admin\AccessRequestController as AdminAccessRequestController;
+use App\Http\Controllers\Admin\JitSessionController as AdminJitSessionController;
+use App\Http\Controllers\Admin\TargetServerController;
+use App\Http\Controllers\JitSessionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -10,6 +16,41 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/requests', [AccessRequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/create', [AccessRequestController::class, 'create'])->name('requests.create');
+    Route::post('/requests', [AccessRequestController::class, 'store'])->name('requests.store');
+    Route::get('/requests/{accessRequest}', [AccessRequestController::class, 'show'])->name('requests.show');
+
+    Route::get('/sessions', [JitSessionController::class, 'index'])->name('sessions.index');
+    Route::get('/sessions/{jitSession}', [JitSessionController::class, 'show'])->name('sessions.show');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+});
+
+Route::get('/admin', function () {
+    return view('admin.dashboard');
+})->middleware(['auth', 'verified', 'admin'])->name('admin.dashboard');
+
+Route::middleware(['auth', 'verified', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/access-requests', [AdminAccessRequestController::class, 'index'])->name('access-requests.index');
+        Route::get('/access-requests/{accessRequest}', [AdminAccessRequestController::class, 'show'])->name('access-requests.show');
+        Route::post('/access-requests/{accessRequest}/approve', [AdminAccessRequestController::class, 'approve'])->name('access-requests.approve');
+        Route::post('/access-requests/{accessRequest}/reject', [AdminAccessRequestController::class, 'reject'])->name('access-requests.reject');
+
+        Route::get('/sessions', [AdminJitSessionController::class, 'index'])->name('sessions.index');
+        Route::get('/sessions/{jitSession}', [AdminJitSessionController::class, 'show'])->name('sessions.show');
+        Route::post('/sessions/{jitSession}/revoke', [AdminJitSessionController::class, 'revoke'])->name('sessions.revoke');
+
+        Route::resource('target-servers', TargetServerController::class)
+            ->except(['show']);
+    });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

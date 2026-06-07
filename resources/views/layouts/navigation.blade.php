@@ -15,6 +15,41 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    <x-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
+                        {{ __('Notifications') }}
+                        @if (Auth::user()->unreadNotifications()->count() > 0)
+                            <span class="ms-1 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
+                                {{ Auth::user()->unreadNotifications()->count() }}
+                            </span>
+                        @endif
+                    </x-nav-link>
+
+                    @if (Auth::user()->isAdmin())
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            {{ __('Admin') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.target-servers.index')" :active="request()->routeIs('admin.target-servers.*')">
+                            {{ __('Target Servers') }}
+                        </x-nav-link>
+                        
+                        <x-nav-link :href="route('admin.access-requests.index')" :active="request()->routeIs('admin.access-requests.*')">
+                            {{ __('Access Requests') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.sessions.index')" :active="request()->routeIs('admin.sessions.*')">
+                            {{ __('JIT Sessions') }}
+                        </x-nav-link>
+                    @else
+                        <x-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">
+                            {{ __('My Requests') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('sessions.index')" :active="request()->routeIs('sessions.*')">
+                            {{ __('My Sessions') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +105,39 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
+                {{ __('Notifications') }}
+                @if (Auth::user()->unreadNotifications()->count() > 0)
+                    ({{ Auth::user()->unreadNotifications()->count() }})
+                @endif
+            </x-responsive-nav-link>
+
+            @if (Auth::user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                    {{ __('Admin') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.target-servers.index')" :active="request()->routeIs('admin.target-servers.*')">
+                    {{ __('Target Servers') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.access-requests.index')" :active="request()->routeIs('admin.access-requests.*')">
+                    {{ __('Access Requests') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.sessions.index')" :active="request()->routeIs('admin.sessions.*')">
+                    {{ __('JIT Sessions') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('requests.index')" :active="request()->routeIs('requests.*')">
+                    {{ __('My Requests') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('sessions.index')" :active="request()->routeIs('sessions.*')">
+                    {{ __('My Sessions') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
