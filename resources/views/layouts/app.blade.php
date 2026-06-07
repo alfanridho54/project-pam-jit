@@ -14,14 +14,14 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+    <body class="font-sans antialiased text-gray-900">
+        <div class="min-h-screen bg-slate-50">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
             @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <header class="border-b border-gray-200 bg-white">
+                    <div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
                 </header>
@@ -31,7 +31,7 @@
             <main>
                 @if (session('error'))
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-                        <div class="rounded-md bg-red-50 p-4 text-sm font-medium text-red-700">
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-sm">
                             {{ session('error') }}
                         </div>
                     </div>
@@ -39,7 +39,7 @@
 
                 @if (session('success'))
                     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-                        <div class="rounded-md bg-green-50 p-4 text-sm font-medium text-green-700">
+                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
                             {{ session('success') }}
                         </div>
                     </div>
