@@ -47,9 +47,18 @@
                         </div>
 
                         <div>
-                            <x-input-label for="requested_duration_minutes" :value="__('Requested Duration')" />
-                            <x-text-input id="requested_duration_minutes" name="requested_duration_minutes" type="number" min="5" max="120" class="mt-1 block w-full" :value="old('requested_duration_minutes', 30)" required />
-                            <x-input-error class="mt-2" :messages="$errors->get('requested_duration_minutes')" />
+                            <x-input-label for="duration_value" :value="__('Requested Duration')" />
+                            <div class="mt-1 grid gap-3 sm:grid-cols-3">
+                                <x-text-input id="duration_value" name="duration_value" type="number" min="1" class="block w-full sm:col-span-2" :value="old('duration_value', 30)" required />
+                                <select id="duration_unit" name="duration_unit" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                    <option value="minutes" @selected(old('duration_unit', 'minutes') === 'minutes')>{{ __('Minutes') }}</option>
+                                    <option value="hours" @selected(old('duration_unit') === 'hours')>{{ __('Hours') }}</option>
+                                    <option value="days" @selected(old('duration_unit') === 'days')>{{ __('Days') }}</option>
+                                </select>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">{{ __('Allowed ranges: 5-120 minutes, 1-24 hours, or 1-7 days.') }}</p>
+                            <x-input-error class="mt-2" :messages="$errors->get('duration_value')" />
+                            <x-input-error class="mt-2" :messages="$errors->get('duration_unit')" />
                         </div>
 
                         <div>

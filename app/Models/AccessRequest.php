@@ -83,6 +83,25 @@ class AccessRequest extends Model
         return $this->status === self::STATUS_PENDING;
     }
 
+    public function formattedDuration(): string
+    {
+        $minutes = (int) $this->requested_duration_minutes;
+
+        if ($minutes >= 1440 && $minutes % 1440 === 0) {
+            $days = (int) ($minutes / 1440);
+
+            return trans_choice(':count day|:count days', $days, ['count' => $days]);
+        }
+
+        if ($minutes >= 60 && $minutes % 60 === 0) {
+            $hours = (int) ($minutes / 60);
+
+            return trans_choice(':count hour|:count hours', $hours, ['count' => $hours]);
+        }
+
+        return trans_choice(':count minute|:count minutes', $minutes, ['count' => $minutes]);
+    }
+
     public function effectiveStatus(): string
     {
         if ($this->status !== self::STATUS_ACTIVE) {

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AccessRequestController as AdminAccessRequestCont
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CommandLogController;
 use App\Http\Controllers\Admin\JitSessionController as AdminJitSessionController;
+use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\ProxmoxController;
 use App\Http\Controllers\Admin\TargetServerController;
 use App\Http\Controllers\DashboardController;
@@ -59,6 +60,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/command-logs', [CommandLogController::class, 'index'])->name('command-logs.index');
         Route::get('/command-logs/{commandLog}', [CommandLogController::class, 'show'])->name('command-logs.show');
+
+        Route::get('/mail-test', [MailTestController::class, 'show'])->name('mail-test.show');
+        Route::post('/mail-test', [MailTestController::class, 'send'])->name('mail-test.send');
 
         Route::get('/proxmox', [ProxmoxController::class, 'index'])->name('proxmox.index');
         Route::post('/proxmox/test', [ProxmoxController::class, 'test'])->name('proxmox.test');

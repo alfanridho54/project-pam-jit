@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\JitSession;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class JitSessionExpiredNotification extends Notification
@@ -12,7 +13,7 @@ class JitSessionExpiredNotification extends Notification
 
     public function __construct(private readonly JitSession $jitSession)
     {
-        $this->jitSession->loadMissing('targetServer');
+        $this->jitSession->loadMissing(['accessRequest', 'targetServer', 'user']);
     }
 
     /**
@@ -20,7 +21,21 @@ class JitSessionExpiredNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject(config('app.name', 'PAM JIT').': JIT session expired')
+            ->greeting('JIT session expired')
+            ->line("Requester: {$this->jitSession->user->name}")
+            ->line("Target server: {$this->jitSession->targetServer->name}")
+            ->line('Requested duration: '.($this->jitSession->accessRequest?->formattedDuration() ?? 'N/A'))
+            ->line('Status: Expired')
+            ->line('Expired at: '.$this->jitSession->expires_at->timezone('Asia/Jakarta')->format('Y-m-d H:i T'))
+            ->action('View session', route('sessions.show', $this->jitSession))
+            ->line('No SSH credentials or Proxmox token secrets are included in this email.');
     }
 
     /**
@@ -32,6 +47,7 @@ class JitSessionExpiredNotification extends Notification
             'title' => 'JIT session expired',
             'message' => "Your JIT session for {$this->jitSession->targetServer->name} has expired.",
             'target_server_name' => $this->jitSession->targetServer->name,
+            'duration' => $this->jitSession->accessRequest?->formattedDuration(),
             'expires_at' => $this->jitSession->expires_at->toDateTimeString(),
             'ended_at' => $this->jitSession->ended_at?->toDateTimeString(),
             'url' => route('sessions.show', $this->jitSession),

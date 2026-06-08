@@ -43,14 +43,34 @@ class AccessRequestController extends Controller
                 Rule::exists('target_servers', 'id')->where('is_active', true),
             ],
             'reason' => ['required', 'string', 'max:2000'],
-            'requested_duration_minutes' => ['required', 'integer', 'min:5', 'max:120'],
+            'duration_value' => ['required', 'integer'],
+            'duration_unit' => ['required', Rule::in(['minutes', 'hours', 'days'])],
         ]);
+
+        $durationValue = (int) $validated['duration_value'];
+        $durationUnit = $validated['duration_unit'];
+
+        $bounds = [
+            'minutes' => ['min' => 5, 'max' => 120, 'multiplier' => 1],
+            'hours' => ['min' => 1, 'max' => 24, 'multiplier' => 60],
+            'days' => ['min' => 1, 'max' => 7, 'multiplier' => 1440],
+        ];
+
+        if ($durationValue < $bounds[$durationUnit]['min'] || $durationValue > $bounds[$durationUnit]['max']) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'duration_value' => "The duration must be between {$bounds[$durationUnit]['min']} and {$bounds[$durationUnit]['max']} {$durationUnit}.",
+                ]);
+        }
+
+        $durationMinutes = $durationValue * $bounds[$durationUnit]['multiplier'];
 
         $accessRequest = AccessRequest::create([
             'user_id' => $request->user()->id,
             'target_server_id' => $validated['target_server_id'],
             'reason' => $validated['reason'],
-            'requested_duration_minutes' => $validated['requested_duration_minutes'],
+            'requested_duration_minutes' => $durationMinutes,
             'status' => AccessRequest::STATUS_PENDING,
         ]);
 
@@ -70,6 +90,8 @@ class AccessRequestController extends Controller
             [
                 'target_server_id' => $accessRequest->target_server_id,
                 'duration_minutes' => $accessRequest->requested_duration_minutes,
+                'duration_value' => $durationValue,
+                'duration_unit' => $durationUnit,
             ]
         );
 

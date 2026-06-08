@@ -27,7 +27,7 @@
 
                     <div>
                         <dt class="text-sm font-medium text-gray-500">{{ __('Duration') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->requested_duration_minutes }} {{ __('minutes') }}</dd>
+                        <dd class="mt-1 text-sm text-gray-900">{{ $accessRequest->formattedDuration() }}</dd>
                     </div>
 
                     <div>

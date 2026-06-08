@@ -44,4 +44,19 @@
             </x-primary-button>
         </div>
     </form>
+
+    <div class="mt-6">
+        <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+                <span class="bg-white px-2 text-gray-500">{{ __('Or') }}</span>
+            </div>
+        </div>
+
+        <a href="{{ route('auth.google.redirect') }}" class="mt-6 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            {{ __('Continue with Google') }}
+        </a>
+    </div>
 </x-guest-layout>

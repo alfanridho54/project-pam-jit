@@ -32,7 +32,7 @@
                                         {{ $accessRequest->targetServer->name }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ $accessRequest->requested_duration_minutes }} {{ __('minutes') }}
+                                        {{ $accessRequest->formattedDuration() }}
                                     </td>
                                     <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
                                         {{ ucfirst($accessRequest->effectiveStatus()) }}
