@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/sessions', [JitSessionController::class, 'index'])->name('sessions.index');
     Route::get('/sessions/{jitSession}/commands', [SessionCommandController::class, 'index'])->name('sessions.commands.index');
     Route::post('/sessions/{jitSession}/commands', [SessionCommandController::class, 'store'])->name('sessions.commands.store');
+    Route::get('/sessions/{jitSession}/sftp-profile', [JitSessionController::class, 'downloadSftpProfile'])->name('sessions.sftp-profile.download');
     Route::get('/sessions/{jitSession}', [JitSessionController::class, 'show'])->name('sessions.show');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

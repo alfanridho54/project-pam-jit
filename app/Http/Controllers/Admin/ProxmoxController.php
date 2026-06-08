@@ -48,13 +48,38 @@ class ProxmoxController extends Controller
             ->with('proxmox_result', $result);
     }
 
-    public function vms(ProxmoxService $proxmox): View
+    public function vms(Request $request, ProxmoxService $proxmox): View
     {
         $result = $proxmox->listQemuVms();
+        $q = trim((string) $request->query('q', ''));
+        $status = $request->query('status');
+        $vms = collect($result['vms']);
+
+        if ($q !== '') {
+            $normalizedQ = strtolower($q);
+
+            $vms = $vms->filter(function (array $vm) use ($normalizedQ): bool {
+                $haystack = [
+                    $vm['vmid'] ?? '',
+                    $vm['name'] ?? '',
+                    $vm['status'] ?? '',
+                    $vm['node'] ?? '',
+                    $vm['detected_ip'] ?? '',
+                ];
+
+                return str_contains(strtolower(implode(' ', $haystack)), $normalizedQ);
+            });
+        }
+
+        if (in_array($status, ['running', 'stopped'], true)) {
+            $vms = $vms->filter(fn (array $vm): bool => ($vm['status'] ?? null) === $status);
+        }
 
         return view('admin.proxmox.vms', [
             'result' => $result,
-            'vms' => $result['vms'],
+            'vms' => $vms->values()->all(),
+            'q' => $q,
+            'status' => $status,
         ]);
     }
 

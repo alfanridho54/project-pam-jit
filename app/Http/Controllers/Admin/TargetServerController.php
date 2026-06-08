@@ -8,6 +8,7 @@ use App\Services\AuditLogService;
 use App\Services\SshConnectionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -15,13 +16,48 @@ use Illuminate\View\View;
 
 class TargetServerController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $targetServers = TargetServer::query()
-            ->latest()
-            ->paginate(15);
+        $q = trim((string) $request->query('q', ''));
+        $status = $request->query('status');
+        $searchableColumns = [
+            'name',
+            'host',
+            'ssh_username',
+            'auth_type',
+        ];
+        $availableColumns = Schema::getColumnListing('target_servers');
 
-        return view('admin.target-servers.index', compact('targetServers'));
+        foreach (['proxmox_vmid', 'proxmox_node', 'proxmox_name'] as $column) {
+            if (in_array($column, $availableColumns, true)) {
+                $searchableColumns[] = $column;
+            }
+        }
+
+        $targetServers = TargetServer::query()
+            ->when($q !== '', function ($query) use ($q, $searchableColumns): void {
+                $normalizedQ = strtolower($q);
+
+                $query->where(function ($query) use ($q, $normalizedQ, $searchableColumns): void {
+                    foreach ($searchableColumns as $column) {
+                        $query->orWhere($column, 'like', "%{$q}%");
+                    }
+
+                    if ($normalizedQ === 'active') {
+                        $query->orWhere('is_active', true);
+                    } elseif ($normalizedQ === 'inactive') {
+                        $query->orWhere('is_active', false);
+                    }
+                });
+            })
+            ->when(in_array($status, ['active', 'inactive'], true), function ($query) use ($status): void {
+                $query->where('is_active', $status === 'active');
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('admin.target-servers.index', compact('targetServers', 'q', 'status'));
     }
 
     public function create(): View
