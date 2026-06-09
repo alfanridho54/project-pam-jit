@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,13 +20,30 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'revoked_by',
     'revoked_at',
     'revoke_reason',
+    'uses_temporary_credential',
+    'temporary_username',
+    'temporary_password_encrypted',
+    'temporary_credential_status',
+    'temporary_credential_created_at',
+    'temporary_credential_disabled_at',
+    'temporary_credential_deleted_at',
+    'temporary_credential_error',
 ])]
+#[Hidden(['temporary_password_encrypted'])]
 class JitSession extends Model
 {
     public const STATUS_ACTIVE = 'active';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_REVOKED = 'revoked';
     public const STATUS_CLOSED = 'closed';
+
+    public const TEMPORARY_CREDENTIAL_PENDING = 'pending';
+    public const TEMPORARY_CREDENTIAL_CREATED = 'created';
+    public const TEMPORARY_CREDENTIAL_CREATE_FAILED = 'create_failed';
+    public const TEMPORARY_CREDENTIAL_DISABLED = 'disabled';
+    public const TEMPORARY_CREDENTIAL_DISABLE_FAILED = 'disable_failed';
+    public const TEMPORARY_CREDENTIAL_DELETED = 'deleted';
+    public const TEMPORARY_CREDENTIAL_DELETE_FAILED = 'delete_failed';
 
     /**
      * @return array<int, string>
@@ -48,6 +66,10 @@ class JitSession extends Model
             'expiry_warning_sent_at' => 'datetime',
             'ended_at' => 'datetime',
             'revoked_at' => 'datetime',
+            'uses_temporary_credential' => 'boolean',
+            'temporary_credential_created_at' => 'datetime',
+            'temporary_credential_disabled_at' => 'datetime',
+            'temporary_credential_deleted_at' => 'datetime',
         ];
     }
 
@@ -103,5 +125,13 @@ class JitSession extends Model
     public function isUsable(): bool
     {
         return $this->isActive() && $this->expires_at->isFuture();
+    }
+
+    public function hasCreatedTemporaryCredential(): bool
+    {
+        return $this->uses_temporary_credential
+            && $this->temporary_credential_status === self::TEMPORARY_CREDENTIAL_CREATED
+            && filled($this->temporary_username)
+            && filled($this->temporary_password_encrypted);
     }
 }

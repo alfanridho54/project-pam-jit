@@ -33,12 +33,12 @@ class SshCommandService
             return $this->result(false, 'denied', 'The target server is inactive.');
         }
 
-        if (blank($targetServer->ssh_username)) {
+        if (! $session->hasCreatedTemporaryCredential() && blank($targetServer->ssh_username)) {
             return $this->result(false, 'failed', 'SSH username is missing.');
         }
 
         try {
-            $credential = $this->credentialFor($session);
+            $login = $this->loginFor($session);
         } catch (DecryptException) {
             return $this->result(false, 'failed', 'Stored SSH credential could not be decrypted.');
         } catch (Throwable $exception) {
@@ -49,7 +49,7 @@ class SshCommandService
             $ssh = new SSH2($targetServer->host, $targetServer->port, 10);
             $ssh->setTimeout(10);
 
-            if (! $ssh->login($targetServer->ssh_username, $credential)) {
+            if (! $ssh->login($login['username'], $login['credential'])) {
                 return $this->result(false, 'failed', 'SSH authentication failed.');
             }
 
@@ -69,16 +69,29 @@ class SshCommandService
         }
     }
 
-    private function credentialFor(JitSession $session): mixed
+    /**
+     * @return array{username: string, credential: mixed}
+     */
+    private function loginFor(JitSession $session): array
     {
         $targetServer = $session->targetServer;
+
+        if ($session->hasCreatedTemporaryCredential()) {
+            return [
+                'username' => $session->temporary_username,
+                'credential' => Crypt::decryptString($session->temporary_password_encrypted),
+            ];
+        }
 
         if ($targetServer->auth_type === 'password') {
             if (! $targetServer->hasPassword()) {
                 throw new \RuntimeException('No SSH password is stored for this target server.');
             }
 
-            return Crypt::decryptString($targetServer->ssh_password_encrypted);
+            return [
+                'username' => $targetServer->ssh_username,
+                'credential' => Crypt::decryptString($targetServer->ssh_password_encrypted),
+            ];
         }
 
         if ($targetServer->auth_type === 'private_key') {
@@ -86,7 +99,10 @@ class SshCommandService
                 throw new \RuntimeException('No SSH private key is stored for this target server.');
             }
 
-            return PublicKeyLoader::loadPrivateKey(Crypt::decryptString($targetServer->ssh_private_key_encrypted));
+            return [
+                'username' => $targetServer->ssh_username,
+                'credential' => PublicKeyLoader::loadPrivateKey(Crypt::decryptString($targetServer->ssh_private_key_encrypted)),
+            ];
         }
 
         throw new \RuntimeException('Unsupported SSH authentication type.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JitSession;
 use App\Services\AuditLogService;
+use App\Services\TemporaryLinuxCredentialService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -43,6 +44,34 @@ class JitSessionController extends Controller
         return view('sessions.show', compact('jitSession'));
     }
 
+    public function revealTemporaryCredential(
+        Request $request,
+        JitSession $jitSession,
+        AuditLogService $auditLog,
+        TemporaryLinuxCredentialService $temporaryCredentials
+    ): View {
+        abort_unless($jitSession->user_id === $request->user()->id, 403);
+
+        $jitSession->load(['accessRequest', 'targetServer', 'revokedBy']);
+
+        abort_unless($jitSession->isUsable() && $jitSession->hasCreatedTemporaryCredential(), 404);
+
+        $temporaryPassword = $temporaryCredentials->decryptTemporaryPassword($jitSession);
+
+        $auditLog->log(
+            $request->user(),
+            'temporary_credential_revealed',
+            $jitSession,
+            "Temporary credential revealed for JIT session #{$jitSession->id}.",
+            [
+                'target_server_id' => $jitSession->target_server_id,
+                'temporary_username' => $jitSession->temporary_username,
+            ]
+        );
+
+        return view('sessions.show', compact('jitSession', 'temporaryPassword'));
+    }
+
     public function downloadSftpProfile(Request $request, JitSession $jitSession, AuditLogService $auditLog): Response
     {
         abort_unless($jitSession->user_id === $request->user()->id, 403);
@@ -52,9 +81,13 @@ class JitSessionController extends Controller
         abort_unless($jitSession->isUsable(), 404);
 
         $targetServer = $jitSession->targetServer;
+        $username = $jitSession->hasCreatedTemporaryCredential()
+            ? $jitSession->temporary_username
+            : $targetServer->ssh_username;
+
         $sessionUrl = sprintf(
             'sftp://%s@%s:%d/',
-            rawurlencode($targetServer->ssh_username),
+            rawurlencode($username),
             $targetServer->host,
             $targetServer->port
         );
@@ -65,12 +98,14 @@ class JitSessionController extends Controller
             'Protocol: SFTP',
             "Host: {$targetServer->host}",
             "Port: {$targetServer->port}",
-            "Username: {$targetServer->ssh_username}",
+            "Username: {$username}",
             "Target server: {$targetServer->name}",
             'Session URL: '.$sessionUrl,
             'Expires at: '.$jitSession->expires_at->timezone('Asia/Jakarta')->format('Y-m-d H:i T'),
             '',
-            'Note: Credentials are managed by PAM and are intentionally not included in this file.',
+            $jitSession->hasCreatedTemporaryCredential()
+                ? 'Note: Password must be revealed from the active JIT session page and is intentionally not included in this file.'
+                : 'Note: Credentials are managed by PAM and are intentionally not included in this file.',
             'File transfer access is only allowed during the active JIT session.',
             'After expiry or revocation, this access should no longer be considered valid.',
             '',

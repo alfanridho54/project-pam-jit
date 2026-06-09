@@ -85,6 +85,18 @@
             </div>
 
             @if ($jitSession->isUsable())
+                @php
+                    $sftpUsername = $jitSession->hasCreatedTemporaryCredential()
+                        ? $jitSession->temporary_username
+                        : $jitSession->targetServer->ssh_username;
+                    $sftpSessionUrl = sprintf(
+                        'sftp://%s@%s:%d/',
+                        rawurlencode($sftpUsername),
+                        $jitSession->targetServer->host,
+                        $jitSession->targetServer->port
+                    );
+                @endphp
+
                 <div class="mt-6 bg-white p-6 shadow-sm sm:rounded-lg">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -94,10 +106,39 @@
                             </p>
                         </div>
 
-                        <a href="{{ route('sessions.sftp-profile.download', $jitSession) }}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                            {{ __('Download WinSCP Profile') }}
-                        </a>
+                        <div class="flex flex-col gap-2 sm:items-end">
+                            @if ($jitSession->hasCreatedTemporaryCredential())
+                                <form method="POST" action="{{ route('sessions.temporary-credential.reveal', $jitSession) }}">
+                                    @csrf
+
+                                    <x-primary-button>
+                                        {{ __('Reveal Temporary Password') }}
+                                    </x-primary-button>
+                                </form>
+                            @endif
+
+                            <a href="{{ route('sessions.sftp-profile.download', $jitSession) }}" class="inline-flex items-center justify-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                {{ __('Download WinSCP Profile') }}
+                            </a>
+                        </div>
                     </div>
+
+                    @isset($temporaryPassword)
+                        <div class="mt-6 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
+                            <p class="text-sm font-semibold text-amber-900">
+                                {{ __('This credential is temporary and expires with this JIT session.') }}
+                            </p>
+                            <div class="mt-3">
+                                <dt class="text-sm font-medium text-amber-900">{{ __('Temporary Password') }}</dt>
+                                <dd class="mt-1 flex rounded-md shadow-sm">
+                                    <input id="temporary-password" type="text" readonly value="{{ $temporaryPassword }}" class="block w-full rounded-l-md border-amber-300 bg-white text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
+                                    <button type="button" data-copy-target="temporary-password" class="inline-flex items-center rounded-r-md border border-l-0 border-amber-300 bg-white px-3 text-xs font-semibold uppercase tracking-widest text-gray-700 hover:bg-gray-50">
+                                        {{ __('Copy') }}
+                                    </button>
+                                </dd>
+                            </div>
+                        </div>
+                    @endisset
 
                     <dl class="mt-6 grid gap-6 sm:grid-cols-2">
                         <div>
@@ -131,10 +172,20 @@
                         </div>
 
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">{{ __('SSH Username') }}</dt>
+                            <dt class="text-sm font-medium text-gray-500">{{ $jitSession->hasCreatedTemporaryCredential() ? __('Temporary Username') : __('SSH Username') }}</dt>
                             <dd class="mt-1 flex rounded-md shadow-sm">
-                                <input id="sftp-username" type="text" readonly value="{{ $jitSession->targetServer->ssh_username }}" class="block w-full rounded-l-md border-gray-300 bg-gray-50 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="sftp-username" type="text" readonly value="{{ $sftpUsername }}" class="block w-full rounded-l-md border-gray-300 bg-gray-50 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
                                 <button type="button" data-copy-target="sftp-username" class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-widest text-gray-700 hover:bg-gray-50">
+                                    {{ __('Copy') }}
+                                </button>
+                            </dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Session URL') }}</dt>
+                            <dd class="mt-1 flex rounded-md shadow-sm">
+                                <input id="sftp-session-url" type="text" readonly value="{{ $sftpSessionUrl }}" class="block w-full rounded-l-md border-gray-300 bg-gray-50 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500">
+                                <button type="button" data-copy-target="sftp-session-url" class="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-widest text-gray-700 hover:bg-gray-50">
                                     {{ __('Copy') }}
                                 </button>
                             </dd>
@@ -147,7 +198,11 @@
                     </dl>
 
                     <div class="mt-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        {{ __('Credentials are managed by PAM and are not shown or included in the downloaded profile. File transfer access is only allowed during the active JIT session. After expiry or revocation, this access should no longer be considered valid.') }}
+                        @if ($jitSession->hasCreatedTemporaryCredential())
+                            {{ __('The downloaded profile includes host, port, username, and session URL only. Reveal the temporary password from this active session page when needed. File transfer access is only allowed during the active JIT session.') }}
+                        @else
+                            {{ __('Credentials are managed by PAM and are not shown or included in the downloaded profile. File transfer access is only allowed during the active JIT session. After expiry or revocation, this access should no longer be considered valid.') }}
+                        @endif
                     </div>
                 </div>
 

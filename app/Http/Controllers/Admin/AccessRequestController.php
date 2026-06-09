@@ -8,6 +8,7 @@ use App\Models\JitSession;
 use App\Notifications\AccessRequestApprovedNotification;
 use App\Notifications\AccessRequestRejectedNotification;
 use App\Services\AuditLogService;
+use App\Services\TemporaryLinuxCredentialService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,13 +33,63 @@ class AccessRequestController extends Controller
         return view('admin.access-requests.show', compact('accessRequest'));
     }
 
-    public function approve(Request $request, AccessRequest $accessRequest, AuditLogService $auditLog): RedirectResponse
-    {
+    public function approve(
+        Request $request,
+        AccessRequest $accessRequest,
+        AuditLogService $auditLog,
+        TemporaryLinuxCredentialService $temporaryCredentials
+    ): RedirectResponse {
         if (! $accessRequest->isPending()) {
             return back()->with('error', 'Only pending requests can be approved.');
         }
 
-        $jitSession = DB::transaction(function () use ($request, $accessRequest): JitSession {
+        $temporaryCredentialsEnabled = $temporaryCredentials->enabled();
+        $now = now();
+        $jitSession = $accessRequest->jitSession()->create([
+            'user_id' => $accessRequest->user_id,
+            'target_server_id' => $accessRequest->target_server_id,
+            'started_at' => $now,
+            'expires_at' => $now->copy()->addMinutes($accessRequest->requested_duration_minutes),
+            'status' => $temporaryCredentialsEnabled ? JitSession::STATUS_CLOSED : JitSession::STATUS_ACTIVE,
+            'uses_temporary_credential' => $temporaryCredentialsEnabled,
+            'temporary_credential_status' => $temporaryCredentialsEnabled
+                ? JitSession::TEMPORARY_CREDENTIAL_PENDING
+                : null,
+        ]);
+
+        if ($temporaryCredentialsEnabled) {
+            $result = $temporaryCredentials->create($jitSession);
+
+            if (! $result['ok']) {
+                $safeError = $result['message'];
+
+                $auditLog->log(
+                    $request->user(),
+                    'temporary_credential_create_failed',
+                    $accessRequest,
+                    "Temporary credential creation failed for access request #{$accessRequest->id}.",
+                    [
+                        'target_server_id' => $accessRequest->target_server_id,
+                        'temporary_username' => $result['username'],
+                        'error' => $safeError,
+                    ]
+                );
+
+                $jitSession->delete();
+
+                return back()->with('error', 'Temporary Linux credential creation failed: '.$safeError);
+            }
+
+            $jitSession->update([
+                'temporary_username' => $result['username'],
+                'temporary_password_encrypted' => $temporaryCredentials->encryptedPassword($result['password']),
+                'temporary_credential_status' => JitSession::TEMPORARY_CREDENTIAL_CREATED,
+                'temporary_credential_created_at' => now(),
+                'temporary_credential_error' => null,
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $accessRequest, $jitSession): void {
             $now = now();
 
             $accessRequest->update([
@@ -50,15 +101,27 @@ class AccessRequestController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            return $accessRequest->jitSession()->create([
-                'user_id' => $accessRequest->user_id,
-                'target_server_id' => $accessRequest->target_server_id,
+            $jitSession->update([
+                'status' => JitSession::STATUS_ACTIVE,
                 'started_at' => $now,
                 'expires_at' => $now->copy()->addMinutes($accessRequest->requested_duration_minutes),
-                'status' => JitSession::STATUS_ACTIVE,
             ]);
         });
 
+        if ($temporaryCredentialsEnabled) {
+            $auditLog->log(
+                $request->user(),
+                'temporary_credential_created',
+                $jitSession,
+                "Temporary credential created for JIT session #{$jitSession->id}.",
+                [
+                    'target_server_id' => $jitSession->target_server_id,
+                    'temporary_username' => $jitSession->temporary_username,
+                ]
+            );
+        }
+
+        $jitSession->refresh();
         $accessRequest->load(['user', 'targetServer', 'jitSession']);
         $accessRequest->user->notify(new AccessRequestApprovedNotification($accessRequest));
 

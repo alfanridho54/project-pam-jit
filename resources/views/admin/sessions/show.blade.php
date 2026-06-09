@@ -77,6 +77,49 @@
                     </dl>
                 </div>
 
+                <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <h3 class="text-lg font-medium text-gray-900">{{ __('Temporary Credential Lifecycle') }}</h3>
+
+                    <dl class="mt-6 grid gap-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Uses Temporary Credential') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->uses_temporary_credential ? __('Yes') : __('No') }}</dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Temporary Username') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->temporary_username ?? __('None') }}</dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Credential Status') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->temporary_credential_status ? str_replace('_', ' ', ucfirst($jitSession->temporary_credential_status)) : __('None') }}</dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Created At') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->temporary_credential_created_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') ?? __('None') }}</dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Disabled At') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->temporary_credential_disabled_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') ?? __('None') }}</dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">{{ __('Deleted At') }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">{{ $jitSession->temporary_credential_deleted_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') ?? __('None') }}</dd>
+                        </div>
+
+                        @if ($jitSession->temporary_credential_error)
+                            <div class="sm:col-span-2">
+                                <dt class="text-sm font-medium text-gray-500">{{ __('Safe Error') }}</dt>
+                                <dd class="mt-1 whitespace-pre-line text-sm text-red-700">{{ $jitSession->temporary_credential_error }}</dd>
+                            </div>
+                        @endif
+                    </dl>
+                </div>
+
                 @if ($jitSession->isActive())
                     <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                         <h3 class="text-lg font-medium text-gray-900">{{ __('Revoke Session') }}</h3>

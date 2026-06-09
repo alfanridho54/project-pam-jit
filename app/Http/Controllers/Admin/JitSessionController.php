@@ -7,6 +7,7 @@ use App\Models\AccessRequest;
 use App\Models\JitSession;
 use App\Notifications\JitSessionRevokedNotification;
 use App\Services\AuditLogService;
+use App\Services\TemporaryLinuxCredentialService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,12 @@ class JitSessionController extends Controller
         return view('admin.sessions.show', compact('jitSession'));
     }
 
-    public function revoke(Request $request, JitSession $jitSession, AuditLogService $auditLog): RedirectResponse
+    public function revoke(
+        Request $request,
+        JitSession $jitSession,
+        AuditLogService $auditLog,
+        TemporaryLinuxCredentialService $temporaryCredentials
+    ): RedirectResponse
     {
         if (! $jitSession->isActive()) {
             return back()->with('error', 'Only active sessions can be revoked.');
@@ -57,6 +63,8 @@ class JitSessionController extends Controller
             ]);
         });
 
+        $cleanup = $this->cleanupTemporaryCredential($jitSession, $temporaryCredentials, $auditLog, $request);
+
         $jitSession->load(['user', 'targetServer']);
         $jitSession->user->notify(new JitSessionRevokedNotification($jitSession));
 
@@ -70,6 +78,64 @@ class JitSessionController extends Controller
 
         return redirect()
             ->route('admin.sessions.show', $jitSession)
-            ->with('success', 'JIT session revoked.');
+            ->with($cleanup['ok'] ? 'success' : 'error', $cleanup['message'] ?? 'JIT session revoked.');
+    }
+
+    /**
+     * @return array{ok: bool, message: string}
+     */
+    private function cleanupTemporaryCredential(
+        JitSession $jitSession,
+        TemporaryLinuxCredentialService $temporaryCredentials,
+        AuditLogService $auditLog,
+        Request $request
+    ): array {
+        $jitSession->refresh();
+
+        if (! $jitSession->hasCreatedTemporaryCredential()) {
+            return ['ok' => true, 'message' => 'JIT session revoked.'];
+        }
+
+        $result = $temporaryCredentials->cleanup($jitSession);
+        $now = now();
+        $updates = [
+            'temporary_credential_status' => $result['status'],
+            'temporary_credential_error' => $result['ok'] ? null : $result['message'],
+        ];
+
+        if ($result['status'] === JitSession::TEMPORARY_CREDENTIAL_DISABLED) {
+            $updates['temporary_credential_disabled_at'] = $now;
+        }
+
+        if ($result['status'] === JitSession::TEMPORARY_CREDENTIAL_DELETED) {
+            $updates['temporary_credential_deleted_at'] = $now;
+        }
+
+        $jitSession->update($updates);
+
+        $event = match ($result['status']) {
+            JitSession::TEMPORARY_CREDENTIAL_DISABLED => 'temporary_credential_disabled',
+            JitSession::TEMPORARY_CREDENTIAL_DELETED => 'temporary_credential_deleted',
+            default => 'temporary_credential_cleanup_failed',
+        };
+
+        $auditLog->log(
+            $request->user(),
+            $event,
+            $jitSession,
+            "Temporary credential cleanup processed for JIT session #{$jitSession->id}.",
+            [
+                'temporary_username' => $jitSession->temporary_username,
+                'status' => $result['status'],
+                'error' => $result['ok'] ? null : $result['message'],
+            ]
+        );
+
+        return [
+            'ok' => $result['ok'],
+            'message' => $result['ok']
+                ? 'JIT session revoked and temporary credential cleaned up.'
+                : 'JIT session revoked, but temporary credential cleanup failed: '.$result['message'],
+        ];
     }
 }

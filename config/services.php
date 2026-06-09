@@ -50,4 +50,13 @@ return [
         'verify_ssl' => (bool) env('PROXMOX_VERIFY_SSL', true),
     ],
 
+    'temporary_credentials' => [
+        'enabled' => env('PAM_JIT_TEMP_CREDENTIALS_ENABLED', true),
+        'username_prefix' => env('PAM_JIT_TEMP_CREDENTIALS_USERNAME_PREFIX', 'jit'),
+        'cleanup_mode' => env('PAM_JIT_TEMP_CREDENTIALS_CLEANUP_MODE', 'disable'),
+        'default_shell' => env('PAM_JIT_TEMP_CREDENTIALS_DEFAULT_SHELL', '/bin/bash'),
+        'home_base' => env('PAM_JIT_TEMP_CREDENTIALS_HOME_BASE', '/home'),
+        'password_length' => (int) env('PAM_JIT_TEMP_CREDENTIALS_PASSWORD_LENGTH', 24),
+    ],
+
 ];
