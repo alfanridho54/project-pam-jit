@@ -1,43 +1,44 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-500">{{ __('Administration') }}</p>
-                <h2 class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">
-                    {{ __('Mail Test') }}
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Administration') }}</p>
+                <h2 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+                    {{ __('Mail System Verification') }}
                 </h2>
             </div>
 
-            <a href="{{ route('admin.dashboard') }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
+            <a href="{{ route('admin.dashboard') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-900 transition">
                 {{ __('Back to Admin Dashboard') }}
             </a>
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                <div class="mb-6">
-                    <h3 class="text-base font-semibold text-gray-900">{{ __('Send Test Email') }}</h3>
-                    <p class="mt-1 text-sm text-gray-500">
-                        {{ __('Use this admin-only page to verify the current Laravel mail configuration. The test message contains no PAM secrets.') }}
+    <div class="py-6">
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white border border-slate-200 shadow-sm rounded-xl p-6 sm:p-8 space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">{{ __('Send Diagnostic Email') }}</h3>
+                    <p class="text-sm text-slate-500 mt-1">
+                        {{ __('Use this page to verify outbound mail driver settings. Diagnostic messages do not contain any session credentials or secrets.') }}
                     </p>
                 </div>
 
-                <dl class="mb-6 grid gap-4 rounded-md bg-gray-50 p-4 sm:grid-cols-3">
+                <!-- Config metadata details list -->
+                <dl class="grid gap-4 rounded-xl border border-slate-150 bg-slate-50/50 p-4 sm:grid-cols-3 text-sm">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('Mailer') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $mailer }}</dd>
+                        <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Active Mailer') }}</dt>
+                        <dd class="mt-1 font-semibold text-slate-900 font-mono">{{ $mailer }}</dd>
                     </div>
 
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('From Address') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $fromAddress }}</dd>
+                        <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Sender Address') }}</dt>
+                        <dd class="mt-1 font-semibold text-slate-900 truncate font-mono text-xs">{{ $fromAddress }}</dd>
                     </div>
 
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ __('From Name') }}</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $fromName }}</dd>
+                        <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Sender Name') }}</dt>
+                        <dd class="mt-1 font-semibold text-slate-900 truncate">{{ $fromName }}</dd>
                     </div>
                 </dl>
 
@@ -45,18 +46,22 @@
                     @csrf
 
                     <div>
-                        <x-input-label for="recipient_email" :value="__('Recipient Email')" />
-                        <x-text-input id="recipient_email" name="recipient_email" type="email" class="mt-1 block w-full" :value="old('recipient_email', Auth::user()->email)" required />
+                        <x-input-label for="recipient_email" :value="__('Recipient Email Address')" class="font-bold text-slate-700" />
+                        <x-text-input id="recipient_email" name="recipient_email" type="email" class="mt-1 block w-full border-slate-200" :value="old('recipient_email', Auth::user()->email)" required />
                         <x-input-error class="mt-2" :messages="$errors->get('recipient_email')" />
                     </div>
 
-                    <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        {{ __('The test email includes only the app name, current timestamp, app URL, and a test note. It never includes SSH credentials, private keys, or Proxmox token secrets.') }}
+                    <!-- Security Alert -->
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 flex items-start">
+                        <svg class="h-4.5 w-4.5 text-amber-600 mr-2.5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                        </svg>
+                        <span>{{ __('The verification email contains only standard system diagnostics, a timestamp, and base URLs. It never includes active target SSH passwords, keys, or token secrets.') }}</span>
                     </div>
 
-                    <div class="flex justify-end">
-                        <x-primary-button>
-                            {{ __('Send Test Email') }}
+                    <div class="flex justify-end pt-2 border-t border-slate-100">
+                        <x-primary-button class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm">
+                            {{ __('Send Diagnostic Email') }}
                         </x-primary-button>
                     </div>
                 </form>

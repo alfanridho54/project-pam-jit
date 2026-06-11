@@ -1,3 +1,59 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+    }
+}
+
+/* Custom terminal font & background */
+.terminal-console {
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    background-color: #0b0f19;
+    color: #e2e8f0;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Sidebar and general layouts */
+.sidebar-link-active {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-left: 3px solid #6366f1;
+}
+
+.sidebar-link-inactive {
+    color: #94a3b8;
+}
+
+.sidebar-link-inactive:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: #f1f5f9;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Stat card styles */
+.pam-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pam-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
