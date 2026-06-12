@@ -10,7 +10,7 @@
 
     <div class="py-6 space-y-8">
         <!-- Summary Stats Section -->
-        <section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <!-- Metric Card 1: Total Target Servers -->
             <div class="pam-card rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
                 <div>
@@ -63,6 +63,26 @@
                 <div class="rounded-lg bg-slate-100 p-3 text-slate-600">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Metric Card 5: Server Health -->
+            <div class="pam-card rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Server Health') }}</span>
+                    <h3 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">{{ number_format($summary['healthy_target_servers']) }}</h3>
+                    <p class="text-xs text-slate-400 mt-1">
+                        @if ($summary['unhealthy_target_servers'] > 0)
+                            <span class="text-rose-600 font-semibold">{{ $summary['unhealthy_target_servers'] }}</span> {{ __('unhealthy') }}
+                        @else
+                            <span class="text-emerald-600 font-semibold">{{ __('All healthy') }}</span>
+                        @endif
+                    </p>
+                </div>
+                <div class="rounded-lg p-3 {{ $summary['unhealthy_target_servers'] > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-teal-50 text-teal-600' }}">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                     </svg>
                 </div>
             </div>

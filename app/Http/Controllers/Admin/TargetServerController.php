@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TargetServer;
 use App\Services\AuditLogService;
 use App\Services\SshConnectionService;
+use App\Services\TargetServerHealthCheckService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -157,6 +158,46 @@ class TargetServerController extends Controller
         return back()
             ->with($result['ok'] ? 'success' : 'error', $result['message'])
             ->with('ssh_test_result', $result);
+    }
+
+    public function healthCheck(
+        Request $request,
+        TargetServer $targetServer,
+        TargetServerHealthCheckService $healthCheckService,
+        AuditLogService $auditLog,
+    ): RedirectResponse {
+        $result = $healthCheckService->check($targetServer);
+
+        // Persist result — only safe, non-secret fields
+        $targetServer->update([
+            'last_health_status'     => $result['status'],
+            'last_health_checked_at' => $result['checkedAt'],
+            'last_health_latency_ms' => $result['latencyMs'],
+            'last_health_message'    => $result['message'],
+        ]);
+
+        $succeeded = in_array($result['status'], ['ssh_ok', 'tcp_open', 'online'], true);
+        $action    = $succeeded
+            ? 'target_server_health_check_succeeded'
+            : 'target_server_health_check_failed';
+
+        $auditLog->log(
+            $request->user(),
+            $action,
+            $targetServer,
+            "Health check for {$targetServer->name}: {$result['message']}",
+            [
+                'target_server_id' => $targetServer->id,
+                'host'             => $targetServer->host,
+                'port'             => $targetServer->port,
+                'status'           => $result['status'],
+                'latency_ms'       => $result['latencyMs'],
+            ]
+        );
+
+        $flashType = $succeeded ? 'success' : 'warning';
+
+        return back()->with($flashType, "Health check complete: {$result['message']}");
     }
 
     /**

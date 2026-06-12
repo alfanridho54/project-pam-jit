@@ -93,6 +93,12 @@ class DashboardController extends Controller
         $summary = [
             'total_target_servers' => TargetServer::query()->count(),
             'active_target_servers' => TargetServer::query()->where('is_active', true)->count(),
+            'healthy_target_servers' => TargetServer::query()
+                ->whereIn('last_health_status', ['ssh_ok', 'tcp_open', 'online'])
+                ->count(),
+            'unhealthy_target_servers' => TargetServer::query()
+                ->whereIn('last_health_status', ['tcp_failed', 'ssh_failed', 'unreachable', 'error'])
+                ->count(),
             'pending_access_requests' => AccessRequest::query()
                 ->where('status', AccessRequest::STATUS_PENDING)
                 ->count(),

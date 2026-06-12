@@ -53,6 +53,25 @@
             </div>
         @endif
 
+        <!-- Health Check Result Panel -->
+        @if (session('success') && ! session('ssh_test_result'))
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 text-emerald-800 p-4 shadow-sm flex items-center gap-3">
+                <svg class="h-5 w-5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <p class="text-sm font-medium">{{ session('success') }}</p>
+            </div>
+        @endif
+
+        @if (session('warning'))
+            <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 p-4 shadow-sm flex items-center gap-3">
+                <svg class="h-5 w-5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+                <p class="text-sm font-medium">{{ session('warning') }}</p>
+            </div>
+        @endif
+
         <!-- Filter and Table Container -->
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <!-- Table Controls/Filters -->
@@ -103,6 +122,7 @@
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Auth Type') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Credentials status') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Status') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Health') }}</th>
                             <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
@@ -127,6 +147,24 @@
                                 <td class="px-6 py-4 text-sm">
                                     <x-badge :status="$targetServer->is_active ? 'active' : 'inactive'" />
                                 </td>
+                                <!-- Health column -->
+                                <td class="px-6 py-4 text-sm">
+                                    @if ($targetServer->last_health_status)
+                                        <div class="space-y-1">
+                                            <x-badge :status="$targetServer->healthStatusBadgeVariant()" class="capitalize">
+                                                {{ $targetServer->healthStatusLabel() }}
+                                            </x-badge>
+                                            <p class="text-xs text-slate-400 font-mono leading-tight">
+                                                {{ $targetServer->last_health_checked_at?->timezone('Asia/Jakarta')->format('m-d H:i') }}
+                                                @if ($targetServer->last_health_latency_ms !== null)
+                                                    &middot; {{ $targetServer->last_health_latency_ms }}ms
+                                                @endif
+                                            </p>
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400 italic">{{ __('Not checked') }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-right text-sm">
                                     <div class="flex justify-end items-center gap-3">
                                         <a href="{{ route('admin.target-servers.edit', $targetServer) }}" class="font-bold text-indigo-600 hover:text-indigo-900 transition">
@@ -137,6 +175,13 @@
                                             @csrf
                                             <button type="submit" class="font-bold text-slate-600 hover:text-slate-900 transition">
                                                 {{ __('Test Connect') }}
+                                            </button>
+                                        </form>
+
+                                        <form method="POST" action="{{ route('admin.target-servers.health-check', $targetServer) }}">
+                                            @csrf
+                                            <button type="submit" class="font-bold text-teal-600 hover:text-teal-900 transition" title="{{ __('Run health check: TCP + SSH auth') }}">
+                                                {{ __('Health Check') }}
                                             </button>
                                         </form>
 
@@ -152,7 +197,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-400">
+                                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-400">
                                     <div class="flex flex-col items-center justify-center space-y-2">
                                         <svg class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 3h13.5m-13.5-6h13.5m-13.5-3h13.5m-13.5-3h13.5" />
@@ -180,3 +225,5 @@
         </div>
     </div>
 </x-app-layout>
+
+

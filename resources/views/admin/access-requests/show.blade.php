@@ -46,6 +46,29 @@
                     </div>
 
                     <div>
+                        <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Server Health') }}</dt>
+                        <dd class="mt-1.5">
+                            @if ($accessRequest->targetServer->last_health_status)
+                                <div class="flex flex-col gap-1">
+                                    <x-badge :status="$accessRequest->targetServer->healthStatusBadgeVariant()">
+                                        {{ $accessRequest->targetServer->healthStatusLabel() }}
+                                    </x-badge>
+                                    <span class="text-xs text-slate-400 font-mono">
+                                        {{ $accessRequest->targetServer->last_health_checked_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') }}
+                                    </span>
+                                    @if (in_array($accessRequest->targetServer->last_health_status, ['tcp_failed', 'ssh_failed', 'unreachable', 'error'], true))
+                                        <p class="mt-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                                            ⚠ {{ __('Server may be unreachable. Approval is still possible but consider running a health check first.') }}
+                                        </p>
+                                    @endif
+                                </div>
+                            @else
+                                <span class="text-xs text-slate-400 italic">{{ __('Health not checked') }}</span>
+                            @endif
+                        </dd>
+                    </div>
+
+                    <div>
                         <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Requested Duration') }}</dt>
                         <dd class="mt-1.5 text-sm font-semibold text-slate-900">{{ $accessRequest->formattedDuration() }}</dd>
                     </div>
