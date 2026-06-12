@@ -21,6 +21,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'last_health_checked_at',
     'last_health_latency_ms',
     'last_health_message',
+    'last_jit_readiness_status',
+    'last_jit_readiness_checked_at',
+    'last_jit_readiness_message',
+    'last_jit_readiness_details',
 ])]
 #[Hidden(['ssh_password_encrypted', 'ssh_private_key_encrypted'])]
 class TargetServer extends Model
@@ -28,9 +32,11 @@ class TargetServer extends Model
     protected function casts(): array
     {
         return [
-            'is_active'               => 'boolean',
-            'last_health_checked_at'  => 'datetime',
-            'last_health_latency_ms'  => 'integer',
+            'is_active'                    => 'boolean',
+            'last_health_checked_at'       => 'datetime',
+            'last_health_latency_ms'       => 'integer',
+            'last_jit_readiness_checked_at' => 'datetime',
+            'last_jit_readiness_details'   => 'array',
         ];
     }
 
@@ -87,6 +93,37 @@ class TargetServer extends Model
         return in_array($this->last_health_status, ['ssh_ok', 'tcp_open', 'online'], true)
             && $this->last_health_checked_at !== null
             && $this->last_health_checked_at->isAfter(now()->subHours(24));
+    }
+
+    // ── JIT Readiness helpers ───────────────────────────────────────────
+
+    /**
+     * Human-readable label for the last JIT readiness status.
+     */
+    public function jitReadinessStatusLabel(): string
+    {
+        return match ($this->last_jit_readiness_status) {
+            'ready'     => 'Ready',
+            'not_ready' => 'Not Ready',
+            'ssh_failed' => 'SSH Failed',
+            'error'     => 'Error',
+            'unknown'   => 'Unknown',
+            default     => 'Unknown',
+        };
+    }
+
+    /**
+     * Badge variant string for JIT readiness status.
+     */
+    public function jitReadinessBadgeVariant(): string
+    {
+        return match ($this->last_jit_readiness_status) {
+            'ready'     => 'readiness-ok',
+            'not_ready',
+            'ssh_failed',
+            'error'     => 'readiness-fail',
+            default     => 'readiness-unknown',
+        };
     }
 
     // ── Relationships ────────────────────────────────────────────────────────

@@ -123,6 +123,7 @@
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Credentials status') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Status') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Health') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('JIT Readiness') }}</th>
                             <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
@@ -165,6 +166,21 @@
                                         <span class="text-xs text-slate-400 italic">{{ __('Not checked') }}</span>
                                     @endif
                                 </td>
+                                <!-- JIT Readiness column -->
+                                <td class="px-6 py-4 text-sm">
+                                    @if ($targetServer->last_jit_readiness_status)
+                                        <div class="space-y-1">
+                                            <x-badge :status="$targetServer->jitReadinessBadgeVariant()" class="capitalize">
+                                                {{ $targetServer->jitReadinessStatusLabel() }}
+                                            </x-badge>
+                                            <p class="text-xs text-slate-400 font-mono leading-tight">
+                                                {{ $targetServer->last_jit_readiness_checked_at?->timezone('Asia/Jakarta')->format('m-d H:i') }}
+                                            </p>
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400 italic">{{ __('Not checked') }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4 text-right text-sm">
                                     <div class="flex justify-end items-center gap-3">
                                         <a href="{{ route('admin.target-servers.edit', $targetServer) }}" class="font-bold text-indigo-600 hover:text-indigo-900 transition">
@@ -185,6 +201,13 @@
                                             </button>
                                         </form>
 
+                                        <form method="POST" action="{{ route('admin.target-servers.jit-readiness-check', $targetServer) }}">
+                                            @csrf
+                                            <button type="submit" class="font-bold text-purple-600 hover:text-purple-900 transition" title="{{ __('Verify sudo NOPASSWD for JIT credential provisioning') }}">
+                                                {{ __('JIT Readiness') }}
+                                            </button>
+                                        </form>
+
                                         <form method="POST" action="{{ route('admin.target-servers.destroy', $targetServer) }}" onsubmit="return confirm('{{ __('Delete this target server permanently?') }}');">
                                             @csrf
                                             @method('DELETE')
@@ -197,7 +220,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-400">
+                                <td colspan="8" class="px-6 py-12 text-center text-sm text-slate-400">
                                     <div class="flex flex-col items-center justify-center space-y-2">
                                         <svg class="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 3h13.5m-13.5-6h13.5m-13.5-3h13.5m-13.5-3h13.5" />

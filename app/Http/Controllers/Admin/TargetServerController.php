@@ -7,6 +7,7 @@ use App\Models\TargetServer;
 use App\Services\AuditLogService;
 use App\Services\SshConnectionService;
 use App\Services\TargetServerHealthCheckService;
+use App\Services\TargetServerJitReadinessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -198,6 +199,47 @@ class TargetServerController extends Controller
         $flashType = $succeeded ? 'success' : 'warning';
 
         return back()->with($flashType, "Health check complete: {$result['message']}");
+    }
+
+    public function jitReadinessCheck(
+        Request $request,
+        TargetServer $targetServer,
+        TargetServerJitReadinessService $readinessService,
+        AuditLogService $auditLog,
+    ): RedirectResponse {
+        $result = $readinessService->check($targetServer);
+
+        // Persist result — only safe, non-secret fields
+        $targetServer->update([
+            'last_jit_readiness_status'     => $result['status'],
+            'last_jit_readiness_checked_at' => $result['checkedAt'],
+            'last_jit_readiness_message'    => $result['message'],
+            'last_jit_readiness_details'    => $result['details'],
+        ]);
+
+        $action = match ($result['status']) {
+            'ready'     => 'target_server_jit_readiness_ready',
+            'not_ready' => 'target_server_jit_readiness_not_ready',
+            default     => 'target_server_jit_readiness_failed',
+        };
+
+        $auditLog->log(
+            $request->user(),
+            $action,
+            $targetServer,
+            "JIT readiness check for {$targetServer->name}: {$result['message']}",
+            [
+                'target_server_id' => $targetServer->id,
+                'host'             => $targetServer->host,
+                'port'             => $targetServer->port,
+                'status'           => $result['status'],
+                'details'          => $result['details'],
+            ]
+        );
+
+        $flashType = $result['status'] === 'ready' ? 'success' : 'warning';
+
+        return back()->with($flashType, "JIT readiness check: {$result['message']}");
     }
 
     /**

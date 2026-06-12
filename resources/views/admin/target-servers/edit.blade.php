@@ -123,6 +123,83 @@
             </div>
         </div>
 
+        <!-- JIT Readiness Status Panel -->
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="border-b border-slate-100 px-6 py-4 flex items-center justify-between bg-slate-50/20">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">{{ __('JIT Readiness Status') }}</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">{{ __('Verifies sudo NOPASSWD access for temporary credential provisioning commands.') }}</p>
+                </div>
+                <form method="POST" action="{{ route('admin.target-servers.jit-readiness-check', $targetServer) }}">
+                    @csrf
+                    <button type="submit" id="jit-readiness-check-btn"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-100 transition focus:outline-none">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                        </svg>
+                        {{ __('Run JIT Readiness Check') }}
+                    </button>
+                </form>
+            </div>
+            <div class="px-6 py-5">
+                @if ($targetServer->last_jit_readiness_status)
+                    <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Status') }}</dt>
+                            <dd class="mt-1.5">
+                                <x-badge :status="$targetServer->jitReadinessBadgeVariant()">
+                                    {{ $targetServer->jitReadinessStatusLabel() }}
+                                </x-badge>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Last Checked') }}</dt>
+                            <dd class="mt-1.5 text-sm font-mono text-slate-600">
+                                {{ $targetServer->last_jit_readiness_checked_at?->timezone('Asia/Jakarta')->format('Y-m-d H:i') ?? '—' }}
+                            </dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ __('Message') }}</dt>
+                            <dd class="mt-1.5 text-sm text-slate-600 leading-relaxed">
+                                {{ $targetServer->last_jit_readiness_message ?? '—' }}
+                            </dd>
+                        </div>
+                    </dl>
+
+                    @if ($targetServer->last_jit_readiness_details)
+                        <div class="mt-4 border-t border-slate-100 pt-4">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{{ __('Command Readiness Checklist') }}</h4>
+                            <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                @foreach ([
+                                    'sudo_id_ok' => 'sudo id',
+                                    'useradd_ok' => 'sudo useradd',
+                                    'chpasswd_ok' => 'sudo chpasswd',
+                                    'usermod_ok' => 'sudo usermod',
+                                    'userdel_ok' => 'sudo userdel',
+                                ] as $key => $label)
+                                    <div class="flex items-center gap-2">
+                                        @if ($targetServer->last_jit_readiness_details[$key] ?? false)
+                                            <svg class="h-4 w-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                            </svg>
+                                            <span class="text-sm text-emerald-700 font-medium">{{ $label }}</span>
+                                        @else
+                                            <svg class="h-4 w-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                            </svg>
+                                            <span class="text-sm text-red-600 font-medium">{{ $label }}</span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @else
+                    <p class="text-sm text-slate-400 italic">{{ __('No JIT readiness check has been run yet. Click "Run JIT Readiness Check" to begin.') }}</p>
+                @endif
+            </div>
+        </div>
+
         <!-- Quick Test Card -->
         <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div>

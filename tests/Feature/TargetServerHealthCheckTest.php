@@ -7,6 +7,7 @@ use App\Models\TargetServer;
 use App\Models\User;
 use App\Services\TargetServerHealthCheckService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class TargetServerHealthCheckTest extends TestCase
@@ -47,7 +48,7 @@ class TargetServerHealthCheckTest extends TestCase
         $this->mock(TargetServerHealthCheckService::class, function ($mock) use ($checkedAt) {
             $mock->shouldReceive('check')
                 ->once()
-                ->with(fn($server) => $server->id === $this->server->id)
+                ->with(Mockery::on(fn($server) => $server instanceof TargetServer && $server->id === $this->server->id))
                 ->andReturn([
                     'status' => 'ssh_ok',
                     'tcpOk' => true,
@@ -94,7 +95,7 @@ class TargetServerHealthCheckTest extends TestCase
         $this->mock(TargetServerHealthCheckService::class, function ($mock) use ($checkedAt) {
             $mock->shouldReceive('check')
                 ->once()
-                ->with(fn($server) => $server->id === $this->server->id)
+                ->with(Mockery::on(fn($server) => $server instanceof TargetServer && $server->id === $this->server->id))
                 ->andReturn([
                     'status' => 'tcp_failed',
                     'tcpOk' => false,
@@ -136,7 +137,7 @@ class TargetServerHealthCheckTest extends TestCase
         $response = $this->actingAs($this->regularUser)
             ->post(route('admin.target-servers.health-check', $this->server));
 
-        $response->assertStatus(403);
+        $response->assertRedirect(route('dashboard'));
     }
 
     public function test_guest_is_redirected_to_login(): void

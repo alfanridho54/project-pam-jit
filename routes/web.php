@@ -78,6 +78,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('/target-servers/{targetServer}/health-check', [TargetServerController::class, 'healthCheck'])
             ->name('target-servers.health-check');
 
+        Route::post('/target-servers/{targetServer}/jit-readiness-check', [TargetServerController::class, 'jitReadinessCheck'])
+            ->name('target-servers.jit-readiness-check');
+
         Route::resource('target-servers', TargetServerController::class)
             ->except(['show']);
     });
