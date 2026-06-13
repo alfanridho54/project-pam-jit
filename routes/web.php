@@ -13,6 +13,7 @@ use App\Http\Controllers\JitSessionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionCommandController;
+use App\Http\Controllers\TerminalController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/sessions/{jitSession}/commands', [SessionCommandController::class, 'store'])->name('sessions.commands.store');
     Route::post('/sessions/{jitSession}/temporary-credential/reveal', [JitSessionController::class, 'revealTemporaryCredential'])->name('sessions.temporary-credential.reveal');
     Route::get('/sessions/{jitSession}/sftp-profile', [JitSessionController::class, 'downloadSftpProfile'])->name('sessions.sftp-profile.download');
+    Route::get('/sessions/{jitSession}/terminal', [TerminalController::class, 'show'])->name('sessions.terminal.show');
     Route::get('/sessions/{jitSession}', [JitSessionController::class, 'show'])->name('sessions.show');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

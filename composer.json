@@ -10,7 +10,12 @@
         "laravel/framework": "^13.8",
         "laravel/socialite": "^5.27",
         "laravel/tinker": "^3.0",
-        "phpseclib/phpseclib": "^3.0"
+        "phpseclib/phpseclib": "^3.0",
+        "ratchet/rfc6455": "^0.4.1",
+        "react/child-process": "^0.6.7",
+        "react/event-loop": "^1.6",
+        "react/socket": "^1.17",
+        "react/stream": "^1.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

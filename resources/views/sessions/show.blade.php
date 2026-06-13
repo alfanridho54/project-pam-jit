@@ -15,6 +15,11 @@
                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"/></svg>
                         {{ __('Open SSH Command') }}
                     </a>
+                    <a href="{{ route('sessions.terminal.show', $jitSession) }}" class="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 transition" title="{{ __('Experimental: Interactive SSH PTY terminal') }}">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
+                        {{ __('Interactive Terminal') }}
+                        <span class="ml-0.5 inline-flex items-center rounded bg-amber-500/20 px-1 py-0.5 text-xxs font-bold text-amber-300 uppercase tracking-wider">Exp</span>
+                    </a>
                 @endif
             </div>
         </div>
