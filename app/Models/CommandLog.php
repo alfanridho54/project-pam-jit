@@ -12,8 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'target_server_id',
     'command',
     'status',
+    'blocked_reason',
     'output_excerpt',
     'exit_code',
+    'metadata',
     'executed_at',
 ])]
 class CommandLog extends Model
@@ -22,6 +24,7 @@ class CommandLog extends Model
     public const STATUS_FAILED = 'failed';
     public const STATUS_BLOCKED = 'blocked';
     public const STATUS_DENIED = 'denied';
+    public const STATUS_ALLOWED = 'allowed';
 
     /**
      * @return array<int, string>
@@ -33,6 +36,7 @@ class CommandLog extends Model
             self::STATUS_FAILED,
             self::STATUS_BLOCKED,
             self::STATUS_DENIED,
+            self::STATUS_ALLOWED,
         ];
     }
 
@@ -40,6 +44,7 @@ class CommandLog extends Model
     {
         return [
             'executed_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 

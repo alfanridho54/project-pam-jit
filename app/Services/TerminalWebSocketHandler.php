@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\CommandLog;
 use App\Models\JitSession;
 use GuzzleHttp\Psr7\Request as Psr7Request;
 use Illuminate\Support\Facades\Crypt;
@@ -29,7 +30,7 @@ use React\Socket\TcpServer;
  */
 class TerminalWebSocketHandler
 {
-    /** @var array<string, array{process: Process|null, tempKeyPath: ?string, session: JitSession|null, logRef: ?string, openedAt: int, timer: mixed, messageBuffer: MessageBuffer|null, stderrBuffer: string, stdoutReceived: bool, stderrReceived: bool}> */
+    /** @var array<string, array{process: Process|null, tempKeyPath: ?string, session: JitSession|null, logRef: ?string, openedAt: int, timer: mixed, messageBuffer: MessageBuffer|null, stderrBuffer: string, stdoutReceived: bool, stderrReceived: bool, lineBuffer: string}> */
     private array $connections = [];
 
     private PtyTerminalService $ptyService;
@@ -102,6 +103,7 @@ class TerminalWebSocketHandler
             'stderrBuffer' => '',
             'stdoutReceived' => false,
             'stderrReceived' => false,
+            'lineBuffer' => '',
         ];
 
         $conn->on('data', function (string $data) use ($conn, $connId, &$httpBuffer) {
@@ -269,9 +271,8 @@ class TerminalWebSocketHandler
         }
 
         // Subsequent messages = SSH stdin input (keystrokes from xterm.js)
-        if ($state['process'] !== null && $state['process']->isRunning()) {
-            $state['process']->stdin->write($payload);
-        }
+        // Route through policy-aware writer instead of forwarding directly.
+        $this->writeToSsh($conn, $connId, $payload);
     }
 
     /**
@@ -480,6 +481,193 @@ class TerminalWebSocketHandler
         });
 
         $this->connections[$connId]['timer'] = $timer;
+    }
+
+    // ─── Command Policy Enforcement ─────────────────────────────────────────
+
+    /**
+     * Buffer keystrokes into a command line and enforce the command-block policy
+     * before allowing Enter to reach the SSH process.
+     *
+     * Printable characters are forwarded to SSH stdin immediately (preserving
+     * natural editing and tab-completion) while also being accumulated in the
+     * per-connection lineBuffer.  When Enter is pressed the accumulated line is
+     * checked against the block-list; a blocked command causes Ctrl+U to be
+     * written to SSH (clearing the remote shell line) and a red ANSI error to
+     * be sent back to the xterm.js client.
+     *
+     * **Known limitation:** This line-buffer approach cannot intercept commands
+     * typed inside interactive sub-programs (e.g. `python3`, `mysql` REPL,
+     * `vim`, `nano`).  Those keystrokes are consumed by the sub-program and
+     * never appear as a plain command line on stdin.  Full coverage for
+     * sub-programs requires session recording for post-hoc review.
+     */
+    private function writeToSsh(ConnectionInterface $conn, string $connId, string $payload): void
+    {
+        $state = &$this->connections[$connId];
+
+        if ($state === null || $state['process'] === null || ! $state['process']->isRunning()) {
+            return;
+        }
+
+        $len = strlen($payload);
+
+        for ($i = 0; $i < $len; $i++) {
+            $byte = ord($payload[$i]);
+
+            // ── Escape sequences (arrow keys, function keys, etc.) ─────────
+            // Forward without accumulating so that cursor movement, Home/End,
+            // and other navigation keys continue to work in the remote shell.
+            if ($byte === 27) {
+                // Skip the full ANSI escape sequence (ESC [ … terminator or ESC O key)
+                $j = $i + 1;
+                if ($j < $len && ($payload[$j] === '[' || $payload[$j] === 'O')) {
+                    $j++;
+                    while ($j < $len && ord($payload[$j]) >= 32 && ord($payload[$j]) < 127) {
+                        $j++;
+                    }
+                }
+                // Forward the entire escape sequence to stdin as-is
+                $state['process']->stdin->write(substr($payload, $i, $j - $i));
+                $i = $j - 1; // will be incremented by the for-loop
+                continue;
+            }
+
+            // ── Enter (CR or LF) ──────────────────────────────────────────
+            if ($byte === 13 || $byte === 10) {
+                $command = trim($state['lineBuffer']);
+                $state['lineBuffer'] = '';
+
+                if ($command !== '') {
+                    $blockedReason = $this->checkCommandPolicy($state['session'], $command);
+
+                    if ($blockedReason !== null) {
+                        // Send Ctrl+U to SSH stdin — clears the remote shell line
+                        $state['process']->stdin->write("\x15");
+
+                        // Send red ANSI error message back to the xterm.js client
+                        $errorMsg = "\r\n\x1b[31m⛔ BLOCKED: {$blockedReason}\x1b[0m\r\n";
+                        $this->sendWsBinary($conn, $connId, $errorMsg);
+
+                        $this->logBlockedCommand($state['session'], $command, $blockedReason);
+                        // Do NOT forward Enter — the command must not execute.
+                        continue;
+                    }
+
+                    $this->logAllowedCommand($state['session'], $command);
+                }
+
+                // Command allowed (or blank line) — forward Enter to stdin
+                $state['process']->stdin->write($payload[$i]);
+                continue;
+            }
+
+            // ── Backspace (DEL 127 / BS 8) ────────────────────────────────
+            if ($byte === 127 || $byte === 8) {
+                $state['lineBuffer'] = substr($state['lineBuffer'], 0, -1);
+                $state['process']->stdin->write($payload[$i]);
+                continue;
+            }
+
+            // ── Ctrl+U (clear line, byte 21) ──────────────────────────────
+            if ($byte === 21) {
+                $state['lineBuffer'] = '';
+                $state['process']->stdin->write($payload[$i]);
+                continue;
+            }
+
+            // ── Ctrl+C (byte 3) / Ctrl+D (byte 4) ─────────────────────────
+            if ($byte === 3 || $byte === 4) {
+                $state['lineBuffer'] = '';
+                $state['process']->stdin->write($payload[$i]);
+                continue;
+            }
+
+            // ── Printable characters (ASCII 32–126) ───────────────────────
+            if ($byte >= 32 && $byte <= 126) {
+                $state['lineBuffer'] .= $payload[$i];
+                $state['process']->stdin->write($payload[$i]);
+                continue;
+            }
+
+            // ── Other control characters (Tab, Ctrl+W, etc.) ──────────────
+            // Forward to stdin so that shell features like tab-completion and
+            // word-erase continue to work, but do not accumulate in the buffer.
+            $state['process']->stdin->write($payload[$i]);
+        }
+    }
+
+    /**
+     * Check whether a command is allowed under the JIT command-block policy.
+     *
+     * Returns a human-readable reason string if the command is blocked,
+     * or null if the command is permitted.
+     */
+    private function checkCommandPolicy(?JitSession $session, string $command): ?string
+    {
+        $blockedPatterns = [
+            '/(?:^|[;&|]\s*)(?:sudo\s+)?(?:passwd|chpasswd|useradd|usermod|userdel)(?:\s|$)/i'
+                => 'User account modification commands are not permitted.',
+            '/(?:^|[;&|]\s*)(?:sudo\s+)?(?:reboot|shutdown|poweroff|halt)(?:\s|$)/i'
+                => 'System power/reboot commands are not permitted.',
+            '/(?:^|[;&|]\s*)(?:sudo\s+)?systemctl\s+(?:reboot|poweroff)(?:\s|$)/i'
+                => 'systemctl reboot/poweroff is not permitted.',
+            '/(?:^|[;&|]\s*)(?:sudo\s+)?(?:mkfs(?:\.\w+)?|fdisk|parted)(?:\s|$)/i'
+                => 'Disk/partition modification commands are not permitted.',
+            '/(?:^|[;&|]\s*)(?:sudo\s+)?dd\s+.*\bif=/i'
+                => 'Raw disk write (dd if=…) is not permitted.',
+            '/\brm\s+-rf\s+\/(?:\s|$)/i'
+                => 'Recursive deletion of root filesystem is not permitted.',
+        ];
+
+        foreach ($blockedPatterns as $pattern => $reason) {
+            if (preg_match($pattern, $command)) {
+                return $reason;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Persist a blocked-command record to the command_logs table.
+     * Wrapped in try/catch so that audit failure never crashes the WebSocket server.
+     */
+    private function logBlockedCommand(?JitSession $session, string $command, string $reason): void
+    {
+        try {
+            CommandLog::create([
+                'jit_session_id' => $session?->id,
+                'user_id' => $session?->user_id,
+                'command' => $command,
+                'status' => CommandLog::STATUS_BLOCKED,
+                'blocked_reason' => $reason,
+                'executed_at' => now(),
+                'metadata' => ['source' => 'pty-xterm'],
+            ]);
+        } catch (\Throwable $e) {
+            $this->writeLine('Command log failed (blocked): '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Persist an allowed-command record to the command_logs table.
+     * Wrapped in try/catch so that audit failure never crashes the WebSocket server.
+     */
+    private function logAllowedCommand(?JitSession $session, string $command): void
+    {
+        try {
+            CommandLog::create([
+                'jit_session_id' => $session?->id,
+                'user_id' => $session?->user_id,
+                'command' => $command,
+                'status' => CommandLog::STATUS_ALLOWED,
+                'executed_at' => now(),
+                'metadata' => ['source' => 'pty-xterm'],
+            ]);
+        } catch (\Throwable $e) {
+            $this->writeLine('Command log failed (allowed): '.$e->getMessage());
+        }
     }
 
     // ─── WebSocket Close / Cleanup ──────────────────────────────────────────
